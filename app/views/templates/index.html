@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Analizador Léxico y Autómatas</title>
+    <title>Compilador DSL - Reglas Claro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
@@ -87,43 +87,44 @@
 <body>
     <div class="container mt-4 mb-5">
         
-        <h2 class="main-title">📋 Analizador Léxico Claro</h2>
+        <h2 class="main-title">📋 Compilador DSL - Reglas Operativas Claro</h2>
         <div class="subtitle">
-            Este sistema simula la fase léxica de un compilador aplicado a la validación de tramas de Portabilidad Numérica.
+            Este sistema evalúa scripts de automatización mediante un Lenguaje Específico de Dominio (DSL). Fase actual: Análisis Léxico.
         </div>
 
         <div class="row g-4">
             
             <div class="col-lg-4">
                 <div class="card-custom">
-                    <h5 class="section-title">Cargar archivo .txt o digitar</h5>
-                    <form method="POST" enctype="multipart/form-data">
-                        
-                        <div class="mb-3">
-                            <input class="form-control form-control-sm" type="file" name="archivo" accept=".txt,.csv">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <textarea class="form-control form-control-sm" name="texto" rows="3" placeholder="O pega tu trama aquí...">{{ texto_ingresado }}</textarea>
-                        </div>
+                    <h5 class="section-title">Ingresar Script de Reglas</h5>
+                    <!-- El action="/" o action="" asegura que se envíe a la ruta principal -->
+                        <form action="/" method="POST" enctype="multipart/form-data">
+                            
+                            <div class="mb-3">
+                                <label class="form-label text-muted" style="font-size: 0.85rem;">Subir archivo .txt (Opcional)</label>
+                                <input class="form-control form-control-sm" type="file" name="archivo" accept=".txt">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label text-muted" style="font-size: 0.85rem;">Código Fuente DSL</label>
+                                <textarea class="form-control form-control-sm" name="texto" rows="6" placeholder="Escribe el script de reglas de Claro aquí...">{{ codigo_ingresado }}</textarea>
+                            </div>
 
-                        <button type="submit" class="btn btn-compile w-100">Compilar / Analizar</button>
-                    </form>
+                            <button type="submit" class="btn btn-compile w-100">Compilar / Analizar</button>
+                        </form>
 
                     <div class="format-box">
-                        <strong style="color:#2c3e50; font-size: 0.95rem;">Formato esperado:</strong><br><br>
-                        NUMERO|OPERADOR|FECHA|TIPO_LINEA<br><br>
-                        <span style="color: #6c757d;">Ejemplo:</span><br>
-                        <span style="color: #27ae60; font-weight: 600;">912345678|MOV|28/09/2026|PRE</span>
+                        <strong style="color:#2c3e50; font-size: 0.95rem;">Sintaxis de ejemplo:</strong><br><br>
+                        <span style="color: #27ae60; font-weight: 600;">SI TIPO_LINEA == PREPAGO Y OPERADOR == MOV ENTONCES ACCION RENOVAR</span>
                     </div>
                 </div>
             </div>
 
             <div class="col-lg-8">
                 <div class="card-custom">
-                    <h5 class="section-title" style="color: #e74c3c;">📌 Análisis Léxico</h5>
+                    <h5 class="section-title" style="color: #e74c3c;">📌 Análisis Léxico (Tabla de Símbolos)</h5>
                     <p class="text-muted" style="font-size: 0.9rem;">
-                        A continuación se muestran todos los tokens reconocidos por el sistema.
+                        A continuación se muestran todos los tokens identificados a partir del código fuente.
                     </p>
 
                     {% if tokens %}
@@ -159,7 +160,7 @@
                     </div>
                     {% else %}
                     <div class="text-center text-muted mt-5 mb-5">
-                        <em>Aún no se han procesado datos. Ingresa una trama para comenzar.</em>
+                        <em>Aún no se ha compilado ningún script. Ingresa el código para comenzar.</em>
                     </div>
                     {% endif %}
                 </div>
