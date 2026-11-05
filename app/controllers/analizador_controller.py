@@ -1,16 +1,13 @@
-# app/controllers/analizador_controller.py
 from flask import render_template, request
 from app.services.compilador.lexico import analizar_texto
-from app.services.compilador.sintactico import analizar_sintaxis
-from app.services.compilador.semantico import analizar_semantica
 
 def procesar_analisis():
     codigo_ingresado = ""
     tokens = []
-    tokens_unicos = []
+    tokens_agrupados = [] 
+    categorias_unicas = []
     
     if request.method == 'POST':
-        # Si envían un archivo .txt o texto desde el textarea
         if 'archivo' in request.files and request.files['archivo'].filename != '':
             archivo = request.files['archivo']
             codigo_ingresado = archivo.read().decode('utf-8')
@@ -23,14 +20,45 @@ def procesar_analisis():
         if codigo_ingresado:
             tokens = analizar_texto(codigo_ingresado)
             
-            # Filtrar tokens únicos para mostrar sus autómatas y quíntuplas sin repetir
-            vistos = set()
+            # Agrupar lexemas por Token para la tabla 
+            diccionario_agrupado = {}
             for t in tokens:
-                if t['lexema'] not in vistos and t['estado'] == 'OK':
-                    vistos.add(t['lexema'])
-                    tokens_unicos.append(t)
+                tipo = t['token']
+                lexema = t['lexema']
+                
+                if tipo not in diccionario_agrupado:
+                    diccionario_agrupado[tipo] = {
+                        'lineas': [t['linea']], 
+                        'token': tipo,
+                        'lexemas': {lexema}, 
+                        'teoria': t['teoria'],
+                        'estado': t['estado']
+                    }
+                else:
+                    diccionario_agrupado[tipo]['lineas'].append(t['linea'])
+                    diccionario_agrupado[tipo]['lexemas'].add(lexema)
+            
+            for tipo, datos in diccionario_agrupado.items():
+                lineas_unicas = sorted(list(set(datos['lineas'])))
+                lineas_str = ", ".join(map(str, lineas_unicas))
+                lexemas_str = ", ".join(datos['lexemas'])
+                
+                tokens_agrupados.append({
+                    'lineas': lineas_str,
+                    'token': datos['token'],
+                    'lexemas': lexemas_str,
+                    'teoria': datos['teoria'],
+                    'estado': datos['estado']
+                })
+            
+            # Filtrar por TIPO DE TOKEN para mostrar la teoría del autómata maestro
+            vistos_tokens = set()
+            for t in tokens:
+                if t['token'] not in vistos_tokens and t['estado'] == 'OK':
+                    vistos_tokens.add(t['token'])
+                    categorias_unicas.append(t)
 
     return render_template('index.html', 
                            codigo_ingresado=codigo_ingresado, 
-                           tokens=tokens, 
-                           tokens_unicos=tokens_unicos)
+                           tokens_agrupados=tokens_agrupados, 
+                           categorias_unicas=categorias_unicas)
