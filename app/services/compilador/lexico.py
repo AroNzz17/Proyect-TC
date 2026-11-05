@@ -5,7 +5,22 @@ def obtener_teoria_automata(token_tipo, lexema=""):
     
     if token_tipo == 'NUMERO':
         n = "0, 1, 2, 3, 4, 5, 6, 7, 8, 9"
-        mermaid_graph = (
+        
+        afn_graph = (
+            f'graph LR\n'
+            f'    qS((qS)) -- "ε" --> q0((q0))\n'
+            f'    q0 -- "9" --> q1((q1))\n'
+            f'    q1 -- "{n}" --> q2((q2))\n'
+            f'    q2 -- "{n}" --> q3((q3))\n'
+            f'    q3 -- "{n}" --> q4((q4))\n'
+            f'    q4 -- "{n}" --> q5((q5))\n'
+            f'    q5 -- "{n}" --> q6((q6))\n'
+            f'    q6 -- "{n}" --> q7((q7))\n'
+            f'    q7 -- "{n}" --> q8((q8))\n'
+            f'    q8 -- "{n}" --> q9(((q9)))'
+        )
+        
+        afd_graph = (
             f'graph LR\n'
             f'    q0((q0)) -- "9" --> q1((q1))\n'
             f'    q1 -- "{n}" --> q2((q2))\n'
@@ -17,6 +32,7 @@ def obtener_teoria_automata(token_tipo, lexema=""):
             f'    q7 -- "{n}" --> q8((q8))\n'
             f'    q8 -- "{n}" --> q9(((q9)))'
         )
+        
         return {
             'er': '9  (0-9)^8',
             'estados': 'Q = {q0, q1, q2, q3, q4, q5, q6, q7, q8, q9}',
@@ -25,13 +41,29 @@ def obtener_teoria_automata(token_tipo, lexema=""):
                 'Sigma': '{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}', 
                 'delta': 'δ(q, c)', 'q0': 'q0', 'F': '{q9}'
             },
-            'afn_mermaid': mermaid_graph,
-            'afd_mermaid': mermaid_graph
+            'afn_mermaid': afn_graph,
+            'afd_mermaid': afd_graph
         }
 
     elif token_tipo == 'FECHA':
         n = "0, 1, 2, 3, 4, 5, 6, 7, 8, 9"
-        mermaid_graph = (
+        
+        afn_graph = (
+            f'graph LR\n'
+            f'    qS((qS)) -- "ε" --> q0((q0))\n'
+            f'    q0 -- "{n}" --> q1((q1))\n'
+            f'    q1 -- "{n}" --> q2((q2))\n'
+            f'    q2 -- "/" --> q3((q3))\n'
+            f'    q3 -- "{n}" --> q4((q4))\n'
+            f'    q4 -- "{n}" --> q5((q5))\n'
+            f'    q5 -- "/" --> q6((q6))\n'
+            f'    q6 -- "{n}" --> q7((q7))\n'
+            f'    q7 -- "{n}" --> q8((q8))\n'
+            f'    q8 -- "{n}" --> q9((q9))\n'
+            f'    q9 -- "{n}" --> q10(((q10)))'
+        )
+        
+        afd_graph = (
             f'graph LR\n'
             f'    q0((q0)) -- "{n}" --> q1((q1))\n'
             f'    q1 -- "{n}" --> q2((q2))\n'
@@ -44,16 +76,17 @@ def obtener_teoria_automata(token_tipo, lexema=""):
             f'    q8 -- "{n}" --> q9((q9))\n'
             f'    q9 -- "{n}" --> q10(((q10)))'
         )
+        
         return {
             'er': '(0-9)^2  /  (0-9)^2  /  (0-9)^4',
-            'estados': 'Q = {q0, q1, q2, q3, q4, q5, q6, q7, q8, q9, q10}',
+            'estados': 'Q = {q0..q10}',
             'quintupla': {
                 'Q': '{q0..q10}', 
                 'Sigma': '{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, /}', 
                 'delta': 'δ(q, c)', 'q0': 'q0', 'F': '{q10}'
             },
-            'afn_mermaid': mermaid_graph,
-            'afd_mermaid': mermaid_graph
+            'afn_mermaid': afn_graph,
+            'afd_mermaid': afd_graph
         }
 
     elif token_tipo == 'TEXTO':
@@ -158,9 +191,9 @@ def obtener_teoria_automata(token_tipo, lexema=""):
             },
             'afn_mermaid': (
                 'graph LR\n'
-                '    q0((q0)) -- "ε" --> q1((q1)) -- "R" --> q2((q2)) -- "E" --> qF(((qF)))\n'
-                '    q0 -- "ε" --> q3((q3)) -- "M" --> q4((q4)) -- "I" --> qF\n'
-                '    q0 -- "ε" --> q5((q5)) -- "S" --> q6((q6)) -- "U" --> qF\n'
+                '    q0((q0)) -- "ε" --> qR1((qR1)) -- "R" --> qR2((qR2)) -- "E" --> qR3((qR3)) -- "N" --> qR4((qR4)) -- "O" --> qR5((qR5)) -- "V" --> qR6((qR6)) -- "A" --> qR7((qR7)) -- "R" --> qF(((qF)))\n'
+                '    q0 -- "ε" --> qM1((qM1)) -- "M" --> qM2((qM2)) -- "I" --> qM3((qM3)) -- "G" --> qM4((qM4)) -- "R" --> qM5((qM5)) -- "A" --> qM6((qM6)) -- "R" --> qF\n'
+                '    q0 -- "ε" --> qS1((qS1)) -- "S" --> qS2((qS2)) -- "U" --> qS3((qS3)) -- "S" --> qS4((qS4)) -- "P" --> qS5((qS5)) -- "E" --> qS6((qS6)) -- "N" --> qS7((qS7)) -- "D" --> qS8((qS8)) -- "E" --> qS9((qS9)) -- "R" --> qF'
             ),
             'afd_mermaid': (
                 'graph LR\n'

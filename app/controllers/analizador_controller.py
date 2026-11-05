@@ -1,11 +1,14 @@
 from flask import render_template, request
 from app.services.compilador.lexico import analizar_texto
+# NUEVO: Importar el analizador sintáctico
+from app.services.compilador.sintactico import analizar_sintaxis
 
 def procesar_analisis():
     codigo_ingresado = ""
     tokens = []
     tokens_agrupados = [] 
     categorias_unicas = []
+    errores_sintacticos = [] # NUEVO: Inicializar la lista de errores
     
     if request.method == 'POST':
         if 'archivo' in request.files and request.files['archivo'].filename != '':
@@ -19,6 +22,9 @@ def procesar_analisis():
 
         if codigo_ingresado:
             tokens = analizar_texto(codigo_ingresado)
+            
+            # NUEVO: Ejecutar el analizador sintáctico enviándole los tokens
+            errores_sintacticos = analizar_sintaxis(tokens)
             
             # Agrupar lexemas por Token para la tabla 
             diccionario_agrupado = {}
@@ -58,7 +64,9 @@ def procesar_analisis():
                     vistos_tokens.add(t['token'])
                     categorias_unicas.append(t)
 
+    # NUEVO: Agregar la variable errores_sintacticos al render_template
     return render_template('index.html', 
                            codigo_ingresado=codigo_ingresado, 
                            tokens_agrupados=tokens_agrupados, 
-                           categorias_unicas=categorias_unicas)
+                           categorias_unicas=categorias_unicas,
+                           errores_sintacticos=errores_sintacticos)

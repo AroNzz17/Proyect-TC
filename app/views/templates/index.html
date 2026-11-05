@@ -56,7 +56,7 @@
                             
                             <div class="mb-3">
                                 <label class="form-label text-muted" style="font-size: 0.85rem;">Código Fuente DSL</label>
-                                <textarea class="form-control form-control-sm" name="texto" rows="6">{{ codigo_ingresado }}</textarea>
+                                <textarea class="form-control form-control-sm" name="texto" rows="6" placeholder="Ej: SI TIPO_LINEA == PREPAGO...&#10;FECHA_TRAMITE 03/11/2026&#10;CELULAR 989654321">{{ codigo_ingresado }}</textarea>
                             </div>
 
                             <button type="submit" class="btn btn-compile w-100">Compilar / Analizar</button>
@@ -65,7 +65,7 @@
                     <div class="format-box">
                         <strong style="color:#2c3e50; font-size: 0.95rem;">Sintaxis de ejemplo:</strong>
                         <div style="color: #27ae60; font-weight: 600; margin-top: 10px; line-height: 1.5;">
-                            SI TIPO_LINEA == PREPAGO Y OPERADOR == CLA ENTONCES ACCION SUSPENDER<br><br>
+                            SI TIPO_LINEA == PREPAGO Y OPERADOR == CLA ENTONCES ACCION SUSPENDER<br>
                             FECHA_TRAMITE 03/11/2026<br>
                             CELULAR 989654321<br>
                             OBSERVACION Cliente solicito la suspension temporal del servicio
@@ -75,6 +75,24 @@
             </div>
 
             <div class="col-lg-8">
+                
+                <!-- NUEVO: BLOQUE DE ALERTA SINTÁCTICA -->
+                {% if errores_sintacticos and errores_sintacticos|length > 0 %}
+                <div class="alert alert-danger mb-4 shadow-sm" style="border-radius: 8px; border-left: 5px solid #c0392b;">
+                    <h6 class="fw-bold mb-2">🚨 Análisis Sintáctico Fallido:</h6>
+                    <ul class="mb-0" style="font-size: 0.9rem;">
+                        {% for error in errores_sintacticos %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% elif tokens_agrupados %}
+                <div class="alert alert-success mb-4 shadow-sm" style="border-radius: 8px; border-left: 5px solid #27ae60;">
+                    <h6 class="fw-bold mb-0">✅ Análisis Sintáctico Exitoso: La estructura gramatical es correcta.</h6>
+                </div>
+                {% endif %}
+                <!-- FIN DEL BLOQUE NUEVO -->
+
                 <div class="card-custom">
                     <h5 class="section-title" style="color: #e74c3c;">📌 Análisis Léxico (Tabla de Símbolos)</h5>
                     <p class="text-muted" style="font-size: 0.9rem;">
