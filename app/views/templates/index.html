@@ -1,193 +1,397 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Compilador DSL - Reglas Claro</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-    <script>mermaid.initialize({startOnLoad:true, theme: 'default'});</script>
-    
-    <style>
-        body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; color: #2c3e50; }
-        .card-custom { background: #ffffff; border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); padding: 24px; margin-bottom: 24px; height: 100%; }
-        .main-title { color: #1b3b5c; font-weight: 700; margin-bottom: 5px; }
-        .subtitle { color: #6c757d; font-size: 0.95rem; background: #e9ecef; padding: 10px 15px; border-radius: 6px; margin-bottom: 30px;}
-        .section-title { font-weight: 600; color: #343a40; margin-bottom: 15px; font-size: 1.1rem;}
-        .btn-compile { background-color: #27ae60; color: white; border: none; font-weight: 600; padding: 10px; border-radius: 6px; transition: all 0.3s; }
-        .btn-compile:hover { background-color: #219653; color: white; }
-        .format-box { background-color: #f8f9fa; border-left: 4px solid #27ae60; padding: 15px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; color: #34495e; margin-top: 20px; }
-        .table-custom { border-collapse: separate; border-spacing: 0; width: 100%; }
-        .table-custom th { background-color: #1b3b5c; color: #ffffff; font-weight: 500; padding: 12px 15px; border: none; position: sticky; top: 0; z-index: 1; }
-        .table-custom th:first-child { border-top-left-radius: 6px; }
-        .table-custom th:last-child { border-top-right-radius: 6px; }
-        .table-custom td { padding: 12px 15px; vertical-align: middle; border-bottom: 1px solid #e9ecef; font-size: 0.9rem; }
-        .table-custom tbody tr:nth-of-type(even) { background-color: #f8f9fa; }
-        .text-green { color: #27ae60; font-weight: 500; }
-        .detail-card { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
-        .token-badge { background-color: #27ae60; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.85em; font-weight: 600; }
-        .token-error { background-color: #e74c3c; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.85em; font-weight: 600; }
-        .er-box { background-color: #f1f8ff; padding: 10px 15px; border-radius: 6px; font-family: monospace; color: #0366d6; margin: 10px 0; font-size: 0.9rem;}
-        .quintupla-table th { background-color: #f8f9fa; color: #1b3b5c; font-weight: 600; text-align: center; width: 40px; vertical-align: middle;}
-        .quintupla-table td { font-family: monospace; text-align: left; color: #2c3e50; vertical-align: middle; padding-left: 15px;}
-        .automata-title { font-weight: 600; color: #1b3b5c; font-size: 0.9rem; margin-top: 15px; margin-bottom: 5px; }
-        .automata-box { background-color: #fafbfc; border: 1px solid #e1e4e8; border-radius: 8px; padding: 15px; text-align: center; overflow-x: auto;}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compilador DSL - Reglas de Portabilidad Claro</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1b3b5c; --verde:#27ae60; --verde-o:#219653; --rojo:#c0392b; --fondo:#f0f2f5;
+  --tarjeta:#fff; --texto:#2c3e50; --suave:#6c757d; --borde:#e2e8f0; --gris:#f8f9fa;
+  --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);font-family:'Inter',system-ui,sans-serif;color:var(--texto);line-height:1.5}
+.contenedor{max-width:1280px;margin:0 auto;padding:24px 16px 48px}
+h1{color:var(--azul);font-size:1.6rem;margin:0 0 4px}
+h2{color:var(--azul);font-size:1.15rem;margin:0 0 12px}
+h3{color:var(--azul);font-size:.98rem;margin:18px 0 8px}
+.sub{color:var(--suave);margin:0 0 20px}
+.tarjeta{background:var(--tarjeta);border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.04);padding:22px;margin-bottom:22px}
+.enunciado{border-left:5px solid var(--azul)}
+.enunciado p{margin:6px 0}
+.enunciado .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{background:#e8f0fb;color:var(--azul);border-radius:999px;padding:3px 10px;font-size:.8rem;font-weight:600}
+.rejilla{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:22px}
+@media (max-width:900px){.rejilla{grid-template-columns:1fr}}
+label{font-size:.85rem;color:var(--suave);display:block;margin-bottom:4px}
+textarea{width:100%;min-height:190px;font-family:var(--mono);font-size:.85rem;border:1px solid #ced4da;border-radius:8px;padding:10px;resize:vertical;color:var(--texto)}
+input[type=file]{width:100%;font-size:.85rem;margin-bottom:12px}
+.botones{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn{border:none;border-radius:8px;padding:10px 16px;font-weight:600;font-size:.9rem;cursor:pointer;font-family:inherit}
+.btn-verde{background:var(--verde);color:#fff;flex:1}
+.btn-verde:hover{background:var(--verde-o)}
+.btn-gris{background:#e9ecef;color:var(--texto)}
+.btn-azul{background:var(--azul);color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.formato{background:var(--gris);border-left:4px solid var(--verde);padding:12px 14px;border-radius:4px;font-family:var(--mono);font-size:.8rem;margin-top:14px;white-space:pre-wrap}
+.aviso{border-radius:10px;padding:14px 16px;margin-bottom:16px;font-weight:600}
+.ok{background:#eafaf1;color:var(--verde-o);border-left:5px solid var(--verde)}
+.mal{background:#fdecea;color:var(--rojo);border-left:5px solid var(--rojo)}
+.metricas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:6px}
+.metrica{background:var(--gris);border-radius:8px;padding:10px;text-align:center}
+.metrica b{display:block;font-size:1.4rem;color:var(--azul)}
+.metrica span{font-size:.75rem;color:var(--suave)}
+.pestanas{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;border-bottom:2px solid var(--borde)}
+.pestana{background:none;border:none;padding:10px 14px;font:600 .88rem Inter,sans-serif;color:var(--suave);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+.pestana.activa{color:var(--azul);border-bottom-color:var(--verde)}
+.panel{display:none}.panel.activo{display:block}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:.85rem}
+th{background:var(--azul);color:#fff;font-weight:500;padding:9px 12px;text-align:left}
+th:first-child{border-top-left-radius:6px}th:last-child{border-top-right-radius:6px}
+td{padding:8px 12px;border-bottom:1px solid #e9ecef;vertical-align:top}
+tbody tr:nth-of-type(even){background:var(--gris)}
+.tabla-scroll{overflow-x:auto;max-width:100%}
+.mono{font-family:var(--mono)}
+.badge{display:inline-block;padding:2px 9px;border-radius:6px;font-size:.78rem;font-weight:600;color:#fff;background:var(--verde)}
+.badge.err{background:var(--rojo)}
+.badge.gris{background:#94a3b8}
+.er{background:#f1f8ff;color:#0366d6;padding:9px 12px;border-radius:6px;font-family:var(--mono);font-size:.88rem;margin:6px 0}
+.selector{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+select{padding:8px 10px;border-radius:8px;border:1px solid #ced4da;font-family:inherit;font-size:.88rem;max-width:100%}
+.grupo{display:none}.grupo.activo{display:block}
+.paso{border:1px solid var(--borde);border-radius:10px;padding:16px;margin-bottom:16px}
+.paso-num{display:inline-flex;width:24px;height:24px;border-radius:50%;background:var(--azul);color:#fff;font-size:.78rem;align-items:center;justify-content:center;margin-right:8px}
+.lienzo{background:#fafbfc;border:1px solid #e1e4e8;border-radius:8px;padding:10px;overflow:auto;max-width:100%}
+.quintupla td:first-child{width:56px;font-weight:700;color:var(--azul);text-align:center}
+.nota{font-size:.82rem;color:var(--suave);margin:6px 0}
+pre.codigo{background:#0f1b2a;color:#e6edf3;border-radius:8px;padding:14px;font-family:var(--mono);font-size:.8rem;overflow:auto;max-height:520px;white-space:pre}
+.derivacion{font-family:var(--mono);font-size:.78rem;background:var(--gris);border-radius:8px;padding:12px;overflow-x:auto;white-space:pre}
+.vacio{color:var(--suave);text-align:center;padding:40px 0;font-style:italic}
+.dos-col{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:900px){.dos-col{grid-template-columns:1fr}.metricas{grid-template-columns:repeat(2,1fr)}}
+/* Gráficos SVG generados por el código */
+.arista{fill:none;stroke:#1b3b5c;stroke-width:1.4}.punta{fill:#1b3b5c}
+.estado{fill:#fff;stroke:#1b3b5c;stroke-width:1.6}.estado-final{fill:none;stroke:#1b3b5c;stroke-width:1.4}
+.nombre{font:600 12px Inter,sans-serif;text-anchor:middle;fill:#1b3b5c}
+.etq{font:12px 'JetBrains Mono',monospace;text-anchor:middle;fill:#c0392b}.fondo-etq{fill:#fafbfc}
+.rama{stroke:#94a3b8;stroke-width:1.2}
+.interno{fill:#e8f0fb;stroke:#1b3b5c}.hoja{fill:#eafaf1;stroke:#27ae60}
+.t-interno,.t-hoja{font:600 11px Inter,sans-serif;text-anchor:middle;fill:#1b3b5c}
+.t-lexema{font:11px 'JetBrains Mono',monospace;text-anchor:middle;fill:#219653}
+.t-regla{font:600 10px Inter,sans-serif;fill:#c0392b}
+.solo-impresion{display:none}
+@media print{
+  @page{size:A4;margin:14mm}
+  body{background:#fff;font-size:11px}
+  .no-imprimir,.pestanas,.selector{display:none!important}
+  .solo-impresion{display:block}
+  .tarjeta{box-shadow:none;padding:0;margin-bottom:14px}
+  .panel,.grupo{display:block!important}
+  .panel{break-before:page}
+  h2,h3{break-after:avoid}
+  .grupo{break-before:page}
+  .grupo{margin-bottom:18px;border-top:2px solid var(--azul);padding-top:6px}
+  .paso{break-inside:avoid;padding:10px;margin-bottom:10px}
+  .dos-col{display:grid;grid-template-columns:1fr 1fr}
+  details{display:none}
+  .rejilla{display:block}
+  .lienzo{overflow:visible;border:none;padding:0}
+  .lienzo svg{max-width:100%;height:auto}
+  pre.codigo{background:#fff;color:#000;border:1px solid #ccc;max-height:none;white-space:pre-wrap}
+  .tabla-scroll{overflow:visible}
+}
+</style>
 </head>
 <body>
-    <div class="container mt-4 mb-5">
-        
-        <h2 class="main-title">📋 Compilador DSL - Reglas Operativas Claro</h2>
-        <div class="subtitle">
-            Este sistema evalúa scripts de automatización mediante un Lenguaje Específico de Dominio (DSL). Fase actual: Análisis Léxico.
-        </div>
+<div class="contenedor">
 
-        <div class="row g-4">
-            
-            <div class="col-lg-4">
-                <div class="card-custom">
-                    <h5 class="section-title">Ingresar Script de Reglas</h5>
-                        <form action="/" method="POST" enctype="multipart/form-data">
-                            
-                            <div class="mb-3">
-                                <label class="form-label text-muted" style="font-size: 0.85rem;">Subir archivo .txt (Opcional)</label>
-                                <input class="form-control form-control-sm" type="file" name="archivo" accept=".txt">
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label text-muted" style="font-size: 0.85rem;">Código Fuente DSL</label>
-                                <textarea class="form-control form-control-sm" name="texto" rows="6" placeholder="Ej: SI TIPO_LINEA == PREPAGO...&#10;FECHA_TRAMITE 03/11/2026&#10;CELULAR 989654321">{{ codigo_ingresado }}</textarea>
-                            </div>
+  <h1>Compilador DSL &mdash; Reglas de Portabilidad Numérica</h1>
+  <p class="sub">Teoría de la Computación &middot; Universidad San Ignacio de Loyola &middot; 2026</p>
 
-                            <button type="submit" class="btn btn-compile w-100">Compilar / Analizar</button>
-                        </form>
-
-                    <div class="format-box">
-                        <strong style="color:#2c3e50; font-size: 0.95rem;">Sintaxis de ejemplo:</strong>
-                        <div style="color: #27ae60; font-weight: 600; margin-top: 10px; line-height: 1.5;">
-                            SI TIPO_LINEA == PREPAGO Y OPERADOR == CLA ENTONCES ACCION SUSPENDER<br>
-                            FECHA_TRAMITE 03/11/2026<br>
-                            CELULAR 989654321<br>
-                            OBSERVACION Cliente solicito la suspension temporal del servicio
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-8">
-                
-                <!-- NUEVO: BLOQUE DE ALERTA SINTÁCTICA -->
-                {% if errores_sintacticos and errores_sintacticos|length > 0 %}
-                <div class="alert alert-danger mb-4 shadow-sm" style="border-radius: 8px; border-left: 5px solid #c0392b;">
-                    <h6 class="fw-bold mb-2">🚨 Análisis Sintáctico Fallido:</h6>
-                    <ul class="mb-0" style="font-size: 0.9rem;">
-                        {% for error in errores_sintacticos %}
-                            <li>{{ error }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                {% elif tokens_agrupados %}
-                <div class="alert alert-success mb-4 shadow-sm" style="border-radius: 8px; border-left: 5px solid #27ae60;">
-                    <h6 class="fw-bold mb-0">✅ Análisis Sintáctico Exitoso: La estructura gramatical es correcta.</h6>
-                </div>
-                {% endif %}
-                <!-- FIN DEL BLOQUE NUEVO -->
-
-                <div class="card-custom">
-                    <h5 class="section-title" style="color: #e74c3c;">📌 Análisis Léxico (Tabla de Símbolos)</h5>
-                    <p class="text-muted" style="font-size: 0.9rem;">
-                        A continuación se muestran todos los tokens identificados a partir del código fuente agrupados por tipo.
-                    </p>
-
-                    {% if tokens_agrupados %}
-                    <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
-                        <table class="table-custom">
-                            <thead>
-                                <tr>
-                                    <th>Líneas</th>
-                                    <th>Token</th>
-                                    <th>Lexemas Encontrados</th>
-                                    <th>Expresión regular</th>
-                                    <th class="text-center">Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for item in tokens_agrupados %}
-                                <tr>
-                                    <td style="color: #6c757d; font-weight: 600;">{{ item.lineas }}</td>
-                                    <td>
-                                        <span class="{% if item.estado == 'OK' %}token-badge{% else %}token-error{% endif %}">
-                                            {{ item.token }}
-                                        </span>
-                                    </td>
-                                    <td class="text-green">{{ item.lexemas }}</td>
-                                    <td><code style="color: #1b3b5c;">{{ item.teoria.er }}</code></td>
-                                    <td class="text-center">
-                                        {% if item.estado == 'OK' %}
-                                            <span class="badge bg-success">OK</span>
-                                        {% else %}
-                                            <span class="badge bg-danger">ERROR</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div class="text-center text-muted mt-5 mb-5">
-                        <em>Aún no se ha compilado ningún script. Ingresa el código para comenzar.</em>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-
-        </div>
-
-        {% if categorias_unicas %}
-        <div class="mt-4">
-            <h4 class="main-title mb-3" style="font-size: 1.3rem;">Detalle de Autómatas Generados (Por Tipo de Token)</h4>
-            
-            <div class="row">
-                {% for item in categorias_unicas %}
-                <div class="col-md-6">
-                    <div class="detail-card">
-                        
-                        <h5 class="fw-bold mb-3" style="color: #1b3b5c;">📍 Token: {{ item.token }}</h5>
-                        
-                        <div class="er-box">
-                            Expresión regular formal: <br> {{ item.teoria.er }}
-                        </div>
-
-                        <div class="mb-3 mt-3">
-                            <div style="color: #1b3b5c; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">Quíntupla Matemática M = (Q, Σ, δ, q0, F)</div>
-                            <table class="table table-bordered table-sm quintupla-table" style="font-size: 0.85rem; margin-bottom: 0;">
-                                <tbody>
-                                    <tr><th>Q</th><td>{{ item.teoria.quintupla.Q }}</td></tr>
-                                    <tr><th>Σ</th><td>{{ item.teoria.quintupla.Sigma }}</td></tr>
-                                    <tr><th>δ</th><td>{{ item.teoria.quintupla.delta }}</td></tr>
-                                    <tr><th>q0</th><td>{{ item.teoria.quintupla.q0 }}</td></tr>
-                                    <tr><th>F</th><td>{{ item.teoria.quintupla.F }}</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="automata-title">AFN</div>
-                        <div class="automata-box">
-                            <pre class="mermaid">{{ item.teoria.afn_mermaid }}</pre>
-                        </div>
-
-                        <div class="automata-title">AFD</div>
-                        <div class="automata-box">
-                            <pre class="mermaid">{{ item.teoria.afd_mermaid }}</pre>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
+  <!-- 2. Enunciado del proyecto -->
+  <section class="tarjeta enunciado">
+    <h2>Enunciado del proyecto</h2>
+    <p><b>Implementación de un analizador léxico y sintáctico basado en un Lenguaje Específico de Dominio (DSL) para automatizar reglas de portabilidad en Claro, Lima.</b></p>
+    <p>En Claro, las reglas comerciales de portabilidad numérica se configuran a mano y los errores de sintaxis o de lógica provocan rechazos en el servidor central. Esta aplicación permite que el analista redacte la regla en un DSL. El sistema la analiza con autómatas finitos (fase léxica), una gramática libre de contexto (fase sintáctica) y una validación de tipos (fase semántica). Solo si la regla está 100&nbsp;% aprobada, la traduce a <b>SQL</b> y <b>JSON</b> listos para el servidor central.</p>
+    <p class="nota">Estructura de una regla: <span class="mono">SI &lt;condición&gt; [Y|O &lt;condición&gt;] ENTONCES ACCION &lt;comando&gt; [metadatos]</span></p>
+    <div class="chips">
+      <span class="chip">Tokens y lexemas</span><span class="chip">Expresiones regulares</span><span class="chip">AFND (Thompson)</span>
+      <span class="chip">AFD (subconjuntos + minimización)</span><span class="chip">Tabla, transiciones y quíntupla</span>
+      <span class="chip">GLC y árbol sintáctico</span><span class="chip">Traducción a SQL y JSON</span><span class="chip">Reporte PDF</span>
     </div>
+  </section>
+
+  <div class="rejilla">
+    <!-- Bloque de entrada: subir archivo y escribir el lenguaje -->
+    <section class="tarjeta no-imprimir">
+      <h2>Ingresar script de reglas</h2>
+      <form action="/" method="POST" enctype="multipart/form-data" id="formulario">
+        <label for="archivo">Subir archivo .txt (opcional)</label>
+        <input type="file" id="archivo" name="archivo" accept=".txt,.dsl">
+        <label for="texto">Código fuente DSL (puede contener varias reglas; cada una empieza con SI)</label>
+        <textarea id="texto" name="texto" spellcheck="false">{{ codigo_ingresado }}</textarea>
+        <div class="botones">
+          <button type="submit" class="btn btn-verde">Compilar / Analizar</button>
+          <button type="button" class="btn btn-gris" id="btn-ejemplo">Cargar ejemplo</button>
+          <button type="button" class="btn btn-azul" onclick="window.print()" {% if not resultado %}disabled{% endif %}>Imprimir en PDF</button>
+        </div>
+      </form>
+      <div class="formato"><b>Ejemplo digitado:</b>
+{{ ejemplo }}</div>
+    </section>
+
+    <!-- Resumen -->
+    <section class="tarjeta">
+      <h2>Resultado del análisis</h2>
+      {% if resultado %}
+        <div class="solo-impresion">
+          <p><b>Código analizado{% if nombre_archivo %} ({{ nombre_archivo }}){% endif %}:</b></p>
+          <pre class="codigo">{{ resultado.codigo }}</pre>
+        </div>
+        {% if resultado.aprobado %}
+          <div class="aviso ok">✅ Lote aprobado: el script es léxica, sintáctica y semánticamente correcto. Se generó la traducción a SQL y JSON.</div>
+        {% else %}
+          <div class="aviso mal">🚨 Lote rechazado: se encontraron {{ resultado.errores|length }} error(es). No se envía nada al servidor central (RF05).</div>
+        {% endif %}
+        <div class="metricas">
+          <div class="metrica"><b>{{ resultado.total_tokens }}</b><span>tokens</span></div>
+          <div class="metrica"><b>{{ resultado.tabla_tokens|length }}</b><span>lexemas distintos</span></div>
+          <div class="metrica"><b>{{ resultado.reglas|length }}</b><span>reglas</span></div>
+          <div class="metrica"><b>{{ resultado.errores|length }}</b><span>errores</span></div>
+        </div>
+        {% if resultado.errores %}
+        <h3>Log de errores</h3>
+        <div class="tabla-scroll"><table>
+          <thead><tr><th>Fase</th><th>Línea:Col</th><th>Lexema</th><th>Descripción</th></tr></thead>
+          <tbody>
+          {% for e in resultado.errores %}
+            <tr><td><span class="badge err">{{ e.fase }}</span></td><td class="mono">{{ e.linea }}:{{ e.columna }}</td><td class="mono">{{ e.lexema }}</td><td>{{ e.mensaje }}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table></div>
+        {% endif %}
+      {% else %}
+        <div class="vacio">Aún no se ha compilado ningún script. Escribe una regla o sube un archivo y presiona «Compilar / Analizar».</div>
+      {% endif %}
+    </section>
+  </div>
+
+  {% if resultado %}
+  <section class="tarjeta">
+    <nav class="pestanas no-imprimir">
+      <button class="pestana activa" data-panel="p-tokens">Tokens y lexemas</button>
+      <button class="pestana" data-panel="p-automatas">ER → AFND → AFD</button>
+      <button class="pestana" data-panel="p-gramatica">Gramática y árbol</button>
+      <button class="pestana" data-panel="p-traduccion">Traducción SQL / JSON</button>
+    </nav>
+
+    <!-- TOKENS Y LEXEMAS -->
+    <div class="panel activo" id="p-tokens">
+      <h2>Tokens y lexemas</h2>
+      <p class="nota">Alfabeto: <span class="mono">{{ resultado.alfabeto }}</span></p>
+      <div class="tabla-scroll"><table>
+        <thead><tr><th>#</th><th>Lexema</th><th>Token</th><th>Aparece en (línea:col)</th><th>Estado</th></tr></thead>
+        <tbody>
+        {% for t in resultado.tabla_tokens %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td class="mono">{{ t.lexema }}</td>
+            <td><span class="badge {% if t.estado != 'OK' %}err{% endif %}">{{ t.token }}</span></td>
+            <td class="mono">{{ t.apariciones|join(', ') }}</td>
+            <td>{% if t.estado == 'OK' %}OK{% else %}<span style="color:var(--rojo)">{{ t.detalle }}</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+      <h3>Expresiones regulares por tipo de token</h3>
+      <div class="tabla-scroll"><table>
+        <thead><tr><th>Token</th><th>Expresión regular</th></tr></thead>
+        <tbody>{% for tipo, er in resultado.er_por_tipo %}<tr><td><span class="badge gris">{{ tipo }}</span></td><td class="mono">{{ er }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </div>
+
+    <!-- ER, AFND, AFD, TABLA, TRANSICIONES, QUÍNTUPLA -->
+    <div class="panel" id="p-automatas">
+      <h2 class="no-imprimir">Expresión regular, AFND y AFD de cada lexema</h2>
+      {% if resultado.automatas %}
+      <div class="selector">
+        <label for="sel-grupo" style="margin:0">Lexema:</label>
+        <select id="sel-grupo">
+          {% for a in resultado.automatas %}
+          <option value="g{{ a.id }}">{{ a.lexemas|join(', ')|truncate(70) }} — {{ a.tipo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% for a in resultado.automatas %}
+      <div class="grupo {% if loop.first %}activo{% endif %}" id="g{{ a.id }}">
+        <h2 class="solo-impresion">ER, AFND y AFD &mdash; lexema(s): {{ a.lexemas|join(', ') }} ({{ a.tipo }})</h2>
+
+        <div class="paso">
+          <h3><span class="paso-num">4</span>Expresión regular (ER)</h3>
+          <p class="nota">Lexema(s): <span class="mono">{{ a.lexemas|join(', ') }}</span> &middot; Token: <b>{{ a.tipo }}</b></p>
+          <div class="er">ER = {{ a.formal }}</div>
+          <p class="nota">Equivalente en Python: <span class="mono">{{ a.python }}</span></p>
+        </div>
+
+        <div class="paso">
+          <h3><span class="paso-num">5</span>AFND (construcción de Thompson) &mdash; {{ a.afnd.n }} estados</h3>
+          <p class="nota">Gráfico generado por el código fuente a partir de la ER (no es una imagen).</p>
+          <div class="lienzo">{{ a.afnd_svg|safe }}</div>
+          <details class="no-imprimir" style="margin-top:10px"><summary class="nota" style="cursor:pointer">Ver tabla de transiciones del AFND</summary>
+            <div class="tabla-scroll"><table>
+              <thead><tr><th></th><th>Estado</th>{% for s in a.afnd_simbolos %}<th class="mono">{{ s }}</th>{% endfor %}</tr></thead>
+              <tbody>{% for f in a.afnd_tabla %}<tr><td>{{ f.marca }}</td><td class="mono">{{ f.estado }}</td>{% for c in f.celdas %}<td class="mono">{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+            </table></div>
+          </details>
+        </div>
+
+        <div class="paso">
+          <h3><span class="paso-num">6</span>AFD equivalente</h3>
+          <p class="nota">Paso 1 &mdash; construcción de subconjuntos (cada estado del AFD es la ε-cerradura de un conjunto de estados del AFND):</p>
+          <div class="tabla-scroll"><table>
+            <thead><tr><th></th><th>AFD</th><th>Conjunto del AFND</th>{% for s in a.afd_sub.alfabeto %}<th class="mono">{{ s }}</th>{% endfor %}</tr></thead>
+            <tbody>{% for f in a.tabla_sub %}<tr><td>{{ f.marca }}</td><td class="mono">{{ f.estado }}</td><td class="mono">{{ f.conjunto }}</td>{% for c in f.celdas %}<td class="mono">{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+          </table></div>
+          {% if a.minimizado %}
+          <p class="nota">Paso 2 &mdash; minimización: los estados equivalentes se agrupan y el AFD pasa de {{ a.afd_sub.estados|length }} a {{ a.afd.estados|length }} estados.</p>
+          {% else %}
+          <p class="nota">Paso 2 &mdash; minimización: el AFD ya es mínimo ({{ a.afd.estados|length }} estados).</p>
+          {% endif %}
+          <div class="lienzo">{{ a.afd_svg|safe }}</div>
+        </div>
+
+        <div class="dos-col">
+          <div class="paso">
+            <h3><span class="paso-num">7</span>Tabla de transiciones del AFD</h3>
+            <div class="tabla-scroll"><table>
+              <thead><tr><th></th><th>Estado</th>{% for s in a.afd.alfabeto %}<th class="mono">{{ s }}</th>{% endfor %}</tr></thead>
+              <tbody>{% for f in a.tabla %}<tr><td>{{ f.marca }}</td><td class="mono">{{ f.estado }}</td>{% for c in f.celdas %}<td class="mono">{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+            </table></div>
+            <p class="nota">→ estado inicial &middot; * estado de aceptación &middot; ∅ sin transición (rechazo)</p>
+          </div>
+          <div class="paso">
+            <h3><span class="paso-num">8</span>Transiciones δ</h3>
+            <div class="derivacion">{{ a.transiciones|join('\n') }}</div>
+          </div>
+        </div>
+
+        <div class="paso">
+          <h3><span class="paso-num">9</span>Quíntupla M = (Q, Σ, δ, q0, F)</h3>
+          <table class="quintupla"><tbody>
+            {% for k, v in a.quintupla.items() %}<tr><td>{{ k }}</td><td class="mono">{{ v }}</td></tr>{% endfor %}
+          </tbody></table>
+          <h3>Verificación: recorrido de cada lexema en el AFD</h3>
+          <div class="tabla-scroll"><table>
+            <thead><tr><th>Lexema</th><th>Camino de estados</th><th>Resultado</th></tr></thead>
+            <tbody>{% for s in a.simulaciones %}<tr><td class="mono">{{ s.lexema }}</td><td class="mono">{{ s.camino }}</td><td>{% if s.aceptada %}<span class="badge">Aceptada</span>{% else %}<span class="badge err">Rechazada</span>{% endif %}</td></tr>{% endfor %}</tbody>
+          </table></div>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="vacio">No hay lexemas válidos para construir autómatas.</div>
+      {% endif %}
+    </div>
+
+    <!-- GRAMÁTICA Y ÁRBOL -->
+    <div class="panel" id="p-gramatica">
+      <h2>Gramática libre de contexto</h2>
+      <div class="dos-col">
+        <div>
+          <p class="nota"><b>G = (V, Σ, R, S)</b> con S = <span class="mono">&lt;SCRIPT&gt;</span></p>
+          <p class="nota"><b>V</b> = <span class="mono">{ {{ resultado.no_terminales|join(', ') }} }</span></p>
+          <p class="nota"><b>Σ</b> = <span class="mono">{ {{ resultado.terminales|join(', ') }} }</span></p>
+        </div>
+        <div class="tabla-scroll"><table>
+          <thead><tr><th>Regla</th><th>Producción</th></tr></thead>
+          <tbody>{% for r, izq, der in resultado.gramatica %}<tr><td class="mono">{{ r }}</td><td class="mono">{{ izq }} → {{ der }}</td></tr>{% endfor %}</tbody>
+        </table></div>
+      </div>
+
+      {% for r in resultado.reglas %}
+      <div class="paso" style="margin-top:16px">
+        <h3>Regla {{ r.n }} (línea {{ r.linea }})
+          {% if r.errores %}<span class="badge err">Con errores</span>{% else %}<span class="badge">Válida</span>{% endif %}</h3>
+        <p class="nota mono">{{ r.texto }}</p>
+        {% if r.arbol_svg %}
+          <h3>Árbol sintáctico (derivación)</h3>
+          <div class="lienzo">{{ r.arbol_svg|safe }}</div>
+          <details style="margin-top:10px" open><summary class="nota" style="cursor:pointer">Derivación por la izquierda</summary>
+            <div class="derivacion">{{ r.derivacion|join('\n') }}</div>
+          </details>
+        {% endif %}
+        {% for e in r.errores %}
+          <p style="color:var(--rojo);margin:6px 0"><b>{{ e.fase }} ({{ e.linea }}:{{ e.columna }}):</b> {{ e.mensaje }}</p>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- TRADUCCIÓN -->
+    <div class="panel" id="p-traduccion">
+      <h2>Traducción a SQL y JSON</h2>
+      {% if resultado.aprobado %}
+      <p class="nota">El lote está 100&nbsp;% aprobado, así que se tradujo al formato del servidor central. El SQL registra el trámite solo para las líneas que cumplen las condiciones de la regla.</p>
+      <div class="dos-col">
+        <div>
+          <div class="botones no-imprimir" style="margin:0 0 8px">
+            <button class="btn btn-gris" data-copiar="sql">Copiar SQL</button>
+            <button class="btn btn-azul" data-descargar="sql">Descargar .sql</button>
+          </div>
+          <pre class="codigo" id="sql">{{ resultado.sql }}</pre>
+        </div>
+        <div>
+          <div class="botones no-imprimir" style="margin:0 0 8px">
+            <button class="btn btn-gris" data-copiar="json">Copiar JSON</button>
+            <button class="btn btn-azul" data-descargar="json">Descargar .json</button>
+          </div>
+          <pre class="codigo" id="json">{{ resultado.json }}</pre>
+        </div>
+      </div>
+      {% else %}
+      <div class="aviso mal">La traducción está bloqueada porque el lote tiene errores. Corrígelos en el «Log de errores» y vuelve a compilar.</div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+
+<script>
+const EJEMPLO = {{ ejemplo|tojson }};
+document.getElementById('btn-ejemplo').addEventListener('click', () => {
+  document.getElementById('texto').value = EJEMPLO;
+  document.getElementById('archivo').value = '';
+});
+document.getElementById('archivo').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const lector = new FileReader();
+  lector.onload = () => { document.getElementById('texto').value = lector.result; };
+  lector.readAsText(f);
+});
+document.querySelectorAll('.pestana').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.pestana').forEach(x => x.classList.toggle('activa', x === b));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('activo', p.id === b.dataset.panel));
+}));
+const sel = document.getElementById('sel-grupo');
+if (sel) sel.addEventListener('change', () => {
+  document.querySelectorAll('.grupo').forEach(g => g.classList.toggle('activo', g.id === sel.value));
+});
+document.querySelectorAll('[data-copiar]').forEach(b => b.addEventListener('click', () => {
+  navigator.clipboard.writeText(document.getElementById(b.dataset.copiar).textContent)
+    .then(() => { b.textContent = '¡Copiado!'; setTimeout(() => b.textContent = 'Copiar ' + b.dataset.copiar.toUpperCase(), 1500); });
+}));
+document.querySelectorAll('[data-descargar]').forEach(b => b.addEventListener('click', () => {
+  const tipo = b.dataset.descargar;
+  const blob = new Blob([document.getElementById(tipo).textContent], {type: tipo === 'json' ? 'application/json' : 'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'reglas_portabilidad.' + tipo;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}));
+</script>
 </body>
 </html>

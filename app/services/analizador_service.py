@@ -1,90 +1,70 @@
-import re
+"""Orquesta las fases del compilador: léxico → ER/AFND/AFD → sintáctico
+(árbol) → semántico → traducción a SQL y JSON."""
+from app.services.compilador import lexico, automatas, graficos, sintactico, semantico, transpilador
 
-def obtener_teoria_automata(token_tipo, lexema):
-    teoria = {
-        'TK_TIPO_LINEA': {
-            'er': '^(PRE|POS)$',
-            'estados': 'q0 → qf',
-            'quintupla': {'Q': '{q0, qf}', 'Sigma': '{P,R,E,O,S}', 'delta': 'δ', 'q0': 'q0', 'F': '{qf}'},
-            'afn_mermaid': f'graph LR\n q0((q0)) -- ε --> q1((q1))\n q1 -- "{lexema}" --> qf(((qf)))',
-            'afd_mermaid': f'graph LR\n q0((q0)) -- "{lexema}" --> qf(((qf)))'
-        },
-        'TK_SEPARADOR': {
-            'er': '^\\|$',
-            'estados': 'q0 → qf',
-            'quintupla': {'Q': '{q0, qf}', 'Sigma': '{|}', 'delta': 'δ', 'q0': 'q0', 'F': '{qf}'},
-            'afn_mermaid': f'graph LR\n q0((q0)) -- ε --> q1((q1))\n q1 -- "{lexema}" --> qf(((qf)))',
-            'afd_mermaid': f'graph LR\n q0((q0)) -- "{lexema}" --> qf(((qf)))'
-        },
-        'TK_OPERADOR': {
-            'er': '^(MOV|ENT|BIT)$',
-            'estados': 'q0 → qf',
-            'quintupla': {'Q': '{q0, qf}', 'Sigma': '{M,O,V,E,N,T,B,I}', 'delta': 'δ', 'q0': 'q0', 'F': '{qf}'},
-            'afn_mermaid': f'graph LR\n q0((q0)) -- ε --> q1((q1))\n q1 -- "{lexema}" --> qf(((qf)))',
-            'afd_mermaid': f'graph LR\n q0((q0)) -- "{lexema}" --> qf(((qf)))'
-        },
-        'TK_NUMERO': {
-            'er': '^9[0-9]{8}$',
-            'estados': 'q0 → qf',
-            'quintupla': {'Q': '{q0, qf}', 'Sigma': '{0,1,2,3,4,5,6,7,8,9}', 'delta': 'δ', 'q0': 'q0', 'F': '{qf}'},
-            'afn_mermaid': f'graph LR\n q0((q0)) -- ε --> q1((q1))\n q1 -- "{lexema}" --> qf(((qf)))',
-            'afd_mermaid': f'graph LR\n q0((q0)) -- "{lexema}" --> qf(((qf)))'
-        },
-        'TK_FECHA': {
-            'er': '^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}$',
-            'estados': 'q0 → qf',
-            'quintupla': {'Q': '{q0, qf}', 'Sigma': '{0,1,2,3,4,5,6,7,8,9,/}', 'delta': 'δ', 'q0': 'q0', 'F': '{qf}'},
-            'afn_mermaid': f'graph LR\n q0((q0)) -- ε --> q1((q1))\n q1 -- "{lexema}" --> qf(((qf)))',
-            'afd_mermaid': f'graph LR\n q0((q0)) -- "{lexema}" --> qf(((qf)))'
-        }
-    }
-    
-    if token_tipo == 'TK_ERROR':
-        return {
-             'er': 'Ninguna (No coincide con el alfabeto)',
-             'estados': 'q0 → qError',
-             'quintupla': {'Q': '{q0, qError}', 'Sigma': '{Σ_inválido}', 'delta': 'δ', 'q0': 'q0', 'F': '{qError}'},
-             'afn_mermaid': f'graph LR\n q0((q0)) -- "{lexema}" --> qError(((Error)))',
-             'afd_mermaid': f'graph LR\n q0((q0)) -- "{lexema}" --> qError(((Error)))'
-        }
 
-    return teoria.get(token_tipo, None)
+def compilar(codigo):
+    tokens, errores_lexicos = lexico.analizar(codigo)
 
-def analizar_texto(texto):
-    reglas = [
-        ('TK_FECHA', r'(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}'),
-        ('TK_NUMERO', r'9[0-9]{8}'),
-        ('TK_OPERADOR', r'MOV|ENT|BIT'),
-        ('TK_TIPO_LINEA', r'PRE|POS'),
-        ('TK_SEPARADOR', r'\|'),
-        ('TK_ESPACIO', r'[ \t\r]+'), 
-        ('TK_ERROR', r'.')
-    ]
-    patron_compilado = '|'.join(f'(?P<{nombre}>{patron})' for nombre, patron in reglas)
-    regex = re.compile(patron_compilado)
-    
-    tokens_encontrados = []
-    
-    lineas = texto.split('\n')
-    
-    for num_linea, linea in enumerate(lineas, 1):
-        if not linea.strip(): 
+    # Tabla de tokens y lexemas (sin repetir lexemas)
+    tabla_tokens, vistos = [], {}
+    for t in tokens:
+        clave = (t.tipo, t.lexema)
+        if clave in vistos:
+            vistos[clave]["apariciones"].append(f"{t.linea}:{t.columna}")
             continue
-            
-        for match in regex.finditer(linea):
-            tipo_token = match.lastgroup
-            lexema = match.group(tipo_token)
-            
-            if tipo_token != 'TK_ESPACIO':
-                estado = "ERROR" if tipo_token == 'TK_ERROR' else "OK"
-                teoria = obtener_teoria_automata(tipo_token, lexema)
-                
-                tokens_encontrados.append({
-                    'linea': num_linea,
-                    'lexema': lexema,
-                    'token': tipo_token,
-                    'estado': estado,
-                    'teoria': teoria
-                })
-                
-    return tokens_encontrados
+        fila = {"token": t.tipo, "lexema": t.lexema, "apariciones": [f"{t.linea}:{t.columna}"],
+                "estado": "ERROR" if t.tipo == "TK_ERROR" else "OK", "detalle": t.detalle}
+        vistos[clave] = fila
+        tabla_tokens.append(fila)
+
+    # ER, AFND y AFD de cada lexema (agrupados por expresión regular)
+    lista_automatas = automatas.construir_automatas(tokens)
+    for a in lista_automatas:
+        a["afnd_svg"] = graficos.afnd_svg(a["afnd"])
+        a["afd_svg"] = graficos.afd_svg(a["afd"])
+
+    # Análisis sintáctico y semántico regla por regla
+    validos = [t for t in tokens if t.tipo != "TK_ERROR"]
+    lineas = codigo.split("\n")
+    fin = (len(lineas), len(lineas[-1]) + 1)
+    reglas, errores_sint, errores_sem = [], [], []
+    for n, toks in enumerate(sintactico.dividir_scripts(validos), 1):
+        arbol, error = sintactico.analizar_script(toks, fin)
+        info = {"n": n, "texto": " ".join(t.lexema for t in toks), "linea": toks[0].linea,
+                "arbol_svg": None, "derivacion": [], "errores": [], "datos": None}
+        if error:
+            errores_sint.append(error)
+            info["errores"].append(error)
+        else:
+            info["arbol_svg"] = graficos.arbol_svg(arbol)
+            info["derivacion"] = sintactico.derivacion_izquierda(arbol)
+            datos = semantico.extraer_regla(arbol)
+            errs = semantico.analizar(datos, toks[0].linea)
+            errores_sem += errs
+            info["errores"] += errs
+            info["datos"] = datos
+        reglas.append(info)
+
+    errores = errores_lexicos + errores_sint + errores_sem
+    aprobado = bool(reglas) and not errores
+    sql = json_txt = None
+    if aprobado:  # RF05: solo se traduce si el lote está 100 % aprobado
+        sql, json_txt = transpilador.traducir([r["datos"] for r in reglas])
+
+    return {
+        "codigo": codigo,
+        "tabla_tokens": tabla_tokens,
+        "total_tokens": len(tokens),
+        "er_por_tipo": automatas.ER_POR_TIPO,
+        "automatas": lista_automatas,
+        "gramatica": sintactico.GRAMATICA,
+        "terminales": sintactico.TERMINALES,
+        "no_terminales": sintactico.NO_TERMINALES,
+        "reglas": reglas,
+        "errores": sorted(errores, key=lambda e: (e["linea"], e["columna"])),
+        "aprobado": aprobado,
+        "sql": sql,
+        "json": json_txt,
+        "alfabeto": lexico.ALFABETO_DESCRIPCION,
+    }
