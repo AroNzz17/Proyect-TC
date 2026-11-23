@@ -1,6 +1,7 @@
 """Orquesta las fases del compilador: léxico → ER/AFND/AFD → sintáctico
 (árbol) → semántico → traducción a SQL y JSON."""
-from app.services.compilador import lexico, automatas, graficos, sintactico, semantico, transpilador
+from app.services.compilador import (lexico, automatas, graficos, jflap, sintactico,
+                                      semantico, transpilador)
 
 
 def compilar(codigo):
@@ -13,7 +14,9 @@ def compilar(codigo):
         if clave in vistos:
             vistos[clave]["apariciones"].append(f"{t.linea}:{t.columna}")
             continue
-        fila = {"token": t.tipo, "lexema": t.lexema, "apariciones": [f"{t.linea}:{t.columna}"],
+        er = automatas.er_de_token(t.tipo, t.lexema)[1] if t.tipo != "TK_ERROR" else "—"
+        fila = {"token": t.tipo, "lexema": t.lexema, "er": er,
+                "apariciones": [f"{t.linea}:{t.columna}"],
                 "estado": "ERROR" if t.tipo == "TK_ERROR" else "OK", "detalle": t.detalle}
         vistos[clave] = fila
         tabla_tokens.append(fila)
@@ -23,6 +26,8 @@ def compilar(codigo):
     for a in lista_automatas:
         a["afnd_svg"] = graficos.afnd_svg(a["afnd"])
         a["afd_svg"] = graficos.afd_svg(a["afd"])
+        a["afnd_jff"] = jflap.afnd_jff(a["afnd"])
+        a["afd_jff"] = jflap.afd_jff(a["afd"])
 
     # Análisis sintáctico y semántico regla por regla
     validos = [t for t in tokens if t.tipo != "TK_ERROR"]
@@ -56,7 +61,6 @@ def compilar(codigo):
         "codigo": codigo,
         "tabla_tokens": tabla_tokens,
         "total_tokens": len(tokens),
-        "er_por_tipo": automatas.ER_POR_TIPO,
         "automatas": lista_automatas,
         "gramatica": sintactico.GRAMATICA,
         "terminales": sintactico.TERMINALES,

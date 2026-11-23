@@ -1,11 +1,11 @@
 """Expresiones regulares, AFND (Thompson) y AFD (construcción de subconjuntos).
 
-Los símbolos del alfabeto pueden ser caracteres sueltos ("S", "/", "=") o
-clases disjuntas de caracteres ("a-z", "A-Z", "0-9"), igual que en las
-expresiones regulares del documento.
+En la ER se usan rangos como (0-9) o (a-z), igual que en el documento, pero
+en los autómatas cada rango se expande a sus caracteres explícitos
+(0, 1, 2, ..., 9): cada transición lee un solo símbolo, como en JFLAP.
+Los estados se nombran q0, q1, q2, ...
 """
 from collections import deque
-from . import lexico
 
 EPS = "ε"
 CLASES = {"a-z": ("a", "z"), "A-Z": ("A", "Z"), "0-9": ("0", "9")}
@@ -30,6 +30,14 @@ class Alt:
 class Estrella:
     def __init__(self, hijo):
         self.hijo = hijo
+
+
+def expandir(simbolo):
+    """Convierte un rango en la lista de sus caracteres: '0-9' → 0,1,...,9."""
+    if simbolo in CLASES:
+        lo, hi = CLASES[simbolo]
+        return [chr(c) for c in range(ord(lo), ord(hi) + 1)]
+    return [simbolo]
 
 
 def literal(palabra):
@@ -88,7 +96,8 @@ def thompson(ast):
         if isinstance(nodo, Sim):
             s = inicio if inicio is not None else a.nuevo()
             f = a.nuevo()
-            a.trans.append((s, nodo.s, f))
+            for c in expandir(nodo.s):  # un rango (0-9) → 10 transiciones
+                a.trans.append((s, c, f))
             return s, f
         if isinstance(nodo, Cat):
             s, f = construir(nodo.hijos[0], inicio)
@@ -142,7 +151,14 @@ def alfabeto(trans):
 
 
 def _orden_simbolo(s):
-    return (0 if s in CLASES else 1, s)
+    # dígitos, mayúsculas, minúsculas y luego los demás símbolos
+    if s.isdigit():
+        return (0, s)
+    if "A" <= s <= "Z":
+        return (1, s)
+    if "a" <= s <= "z":
+        return (2, s)
+    return (3, s)
 
 
 # ---------------------------------------------------------------- AFD
@@ -158,8 +174,7 @@ class AFD:
 
 
 def _nombre_estado(i):
-    letras = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    return letras[i] if i < 26 else f"S{i}"
+    return f"q{i}"
 
 
 def subconjuntos(afnd):
@@ -282,10 +297,28 @@ def quintupla(afd):
     return {
         "Q": "{" + ", ".join(afd.estados) + "}",
         "Σ": "{" + ", ".join(afd.alfabeto) + "}",
+        "δ": "Q × Σ → Q (ver tabla y lista de transiciones)",
         "q0": afd.inicial,
         "F": "{" + ", ".join(afd.finales) + "}",
-        "δ": "Q × Σ → Q (ver tabla de transiciones)",
     }
+
+
+def agrupar_columnas(simbolos, filas):
+    """Para que la tabla quepa en pantalla, junta en una sola columna los
+    símbolos que tienen exactamente las mismas transiciones (p. ej. 0, 1, ..., 9).
+    Devuelve (encabezados, filas) con las celdas ya agrupadas."""
+    grupos = []  # (simbolos, indice de columna representativa)
+    for j, s in enumerate(simbolos):
+        col = tuple(f["celdas"][j] for f in filas)
+        for g in grupos:
+            if g[1] == col and s != EPS and g[0][0] != EPS:
+                g[0].append(s)
+                break
+        else:
+            grupos.append(([s], col, j))
+    encabezados = [", ".join(g[0]) for g in grupos]
+    nuevas = [dict(f, celdas=[f["celdas"][g[2]] for g in grupos]) for f in filas]
+    return encabezados, nuevas
 
 
 def tabla_afd(afd):
@@ -306,8 +339,19 @@ def tabla_afd(afd):
 
 
 def lista_transiciones_afd(afd):
-    return [f"δ({e}, {a}) = {afd.trans[(e, a)]}"
-            for e in afd.estados for a in afd.alfabeto if (e, a) in afd.trans]
+    """δ(q, a) = p. Si varios símbolos van al mismo estado se escriben juntos."""
+    lineas = []
+    for e in afd.estados:
+        por_destino = {}
+        for a in afd.alfabeto:
+            if (e, a) in afd.trans:
+                por_destino.setdefault(afd.trans[(e, a)], []).append(a)
+        for d, simbolos in por_destino.items():
+            if len(simbolos) == 1:
+                lineas.append(f"δ({e}, {simbolos[0]}) = {d}")
+            else:
+                lineas.append(f"δ({e}, x) = {d}   para x ∈ {{{', '.join(simbolos)}}}")
+    return lineas
 
 
 def tabla_afnd(afnd):
@@ -345,7 +389,9 @@ def construir_automatas(tokens):
         afnd = thompson(g["ast"])
         afd_sub = subconjuntos(afnd)
         afd = minimizar(afd_sub)
-        simbolos_afnd, filas_afnd = tabla_afnd(afnd)
+        simbolos_afnd, filas_afnd = agrupar_columnas(*tabla_afnd(afnd))
+        enc_sub, filas_sub = agrupar_columnas(afd_sub.alfabeto, tabla_afd(afd_sub))
+        enc_min, filas_min = agrupar_columnas(afd.alfabeto, tabla_afd(afd))
         resultado.append({
             "id": i,
             "tipo": g["tipo"],
@@ -356,11 +402,13 @@ def construir_automatas(tokens):
             "afnd_simbolos": simbolos_afnd,
             "afnd_tabla": filas_afnd,
             "afd_sub": afd_sub,
-            "tabla_sub": tabla_afd(afd_sub),
+            "tabla_sub": filas_sub,
+            "tabla_sub_simbolos": enc_sub,
             "minimizado": len(afd.estados) < len(afd_sub.estados),
             "afd": afd,
             "quintupla": quintupla(afd),
-            "tabla": tabla_afd(afd),
+            "tabla": filas_min,
+            "tabla_simbolos": enc_min,
             "transiciones": lista_transiciones_afd(afd),
             "simulaciones": [
                 {"lexema": lx, "aceptada": ok, "camino": " → ".join(cam)}
@@ -370,17 +418,3 @@ def construir_automatas(tokens):
         })
     return resultado
 
-
-# Tabla de ER por tipo de token (para mostrar la definición general)
-ER_POR_TIPO = [
-    ("RESERVADA", "SI | ENTONCES | Y | O | ACCION"),
-    ("VARIABLE", "TIPO_LINEA | OPERADOR"),
-    ("VALOR", "PREPAGO | POSTPAGO | MOV | CLA | ENT"),
-    ("COMANDO", "RENOVAR | MIGRAR | SUSPENDER"),
-    ("OPERADOR_REL", "== | != | > | < | >= | <="),
-    ("NUMERO", "9 · (0-9)^8"),
-    ("FECHA", "(0-9)^2 · / · (0-9)^2 · / · (0-9)^4"),
-    ("TEXTO", "(a-z | A-Z | _) · (a-z | A-Z | 0-9 | _)*"),
-]
-
-assert {t for t, _ in ER_POR_TIPO} >= {c for c, _ in lexico.CATEGORIAS}

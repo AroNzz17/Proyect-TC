@@ -85,5 +85,16 @@ class TestTraduccion(unittest.TestCase):
         self.assertGreater(por_minuto, 1000)
 
 
+
+class TestCompatibilidadJFLAP(unittest.TestCase):
+    def test_estados_q_y_simbolos_individuales(self):
+        r = compilar("SI TIPO_LINEA == PREPAGO ENTONCES ACCION RENOVAR FECHA_TRAMITE 03/11/2026")
+        for a in r["automatas"]:
+            self.assertTrue(all(e.startswith("q") for e in a["afd"].estados))
+            for _, s, _ in a["afnd"].trans:
+                self.assertTrue(s == automatas.EPS or len(s) == 1, s)
+            self.assertIn("<type>fa</type>", a["afd_jff"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -54,6 +54,8 @@ td{padding:8px 12px;border-bottom:1px solid #e9ecef;vertical-align:top}
 tbody tr:nth-of-type(even){background:var(--gris)}
 .tabla-scroll{overflow-x:auto;max-width:100%}
 .mono{font-family:var(--mono)}
+th.simbolos{min-width:70px;max-width:260px;white-space:normal;word-break:break-word;font-size:.78rem}
+td.er-celda{white-space:nowrap}
 .badge{display:inline-block;padding:2px 9px;border-radius:6px;font-size:.78rem;font-weight:600;color:#fff;background:var(--verde)}
 .badge.err{background:var(--rojo)}
 .badge.gris{background:#94a3b8}
@@ -192,23 +194,19 @@ pre.codigo{background:#0f1b2a;color:#e6edf3;border-radius:8px;padding:14px;font-
       <h2>Tokens y lexemas</h2>
       <p class="nota">Alfabeto: <span class="mono">{{ resultado.alfabeto }}</span></p>
       <div class="tabla-scroll"><table>
-        <thead><tr><th>#</th><th>Lexema</th><th>Token</th><th>Aparece en (línea:col)</th><th>Estado</th></tr></thead>
+        <thead><tr><th>#</th><th>Lexema</th><th>Token</th><th>Expresión regular</th><th>Aparece en (línea:col)</th><th>Estado</th></tr></thead>
         <tbody>
         {% for t in resultado.tabla_tokens %}
           <tr>
             <td>{{ loop.index }}</td>
             <td class="mono">{{ t.lexema }}</td>
             <td><span class="badge {% if t.estado != 'OK' %}err{% endif %}">{{ t.token }}</span></td>
+            <td class="mono er-celda">{{ t.er }}</td>
             <td class="mono">{{ t.apariciones|join(', ') }}</td>
             <td>{% if t.estado == 'OK' %}OK{% else %}<span style="color:var(--rojo)">{{ t.detalle }}</span>{% endif %}</td>
           </tr>
         {% endfor %}
         </tbody>
-      </table></div>
-      <h3>Expresiones regulares por tipo de token</h3>
-      <div class="tabla-scroll"><table>
-        <thead><tr><th>Token</th><th>Expresión regular</th></tr></thead>
-        <tbody>{% for tipo, er in resultado.er_por_tipo %}<tr><td><span class="badge gris">{{ tipo }}</span></td><td class="mono">{{ er }}</td></tr>{% endfor %}</tbody>
       </table></div>
     </div>
 
@@ -238,10 +236,13 @@ pre.codigo{background:#0f1b2a;color:#e6edf3;border-radius:8px;padding:14px;font-
         <div class="paso">
           <h3><span class="paso-num">5</span>AFND (construcción de Thompson) &mdash; {{ a.afnd.n }} estados</h3>
           <p class="nota">Gráfico generado por el código fuente a partir de la ER (no es una imagen).</p>
+          <p class="nota">Compatible con JFLAP: cada transición lee un solo símbolo (los rangos de la ER se escriben con sus caracteres: 0, 1, ..., 9) y ε es la transición vacía (λ en JFLAP).</p>
           <div class="lienzo">{{ a.afnd_svg|safe }}</div>
+          <div class="botones no-imprimir"><button type="button" class="btn btn-gris" data-jff="afnd{{ a.id }}" data-nombre="AFND_{{ a.tipo }}_{{ a.id }}.jff">Descargar AFND para JFLAP (.jff)</button></div>
+          <textarea hidden id="afnd{{ a.id }}">{{ a.afnd_jff }}</textarea>
           <details class="no-imprimir" style="margin-top:10px"><summary class="nota" style="cursor:pointer">Ver tabla de transiciones del AFND</summary>
             <div class="tabla-scroll"><table>
-              <thead><tr><th></th><th>Estado</th>{% for s in a.afnd_simbolos %}<th class="mono">{{ s }}</th>{% endfor %}</tr></thead>
+              <thead><tr><th></th><th>Estado</th>{% for s in a.afnd_simbolos %}<th class="mono simbolos">{{ s }}</th>{% endfor %}</tr></thead>
               <tbody>{% for f in a.afnd_tabla %}<tr><td>{{ f.marca }}</td><td class="mono">{{ f.estado }}</td>{% for c in f.celdas %}<td class="mono">{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody>
             </table></div>
           </details>
@@ -251,7 +252,7 @@ pre.codigo{background:#0f1b2a;color:#e6edf3;border-radius:8px;padding:14px;font-
           <h3><span class="paso-num">6</span>AFD equivalente</h3>
           <p class="nota">Paso 1 &mdash; construcción de subconjuntos (cada estado del AFD es la ε-cerradura de un conjunto de estados del AFND):</p>
           <div class="tabla-scroll"><table>
-            <thead><tr><th></th><th>AFD</th><th>Conjunto del AFND</th>{% for s in a.afd_sub.alfabeto %}<th class="mono">{{ s }}</th>{% endfor %}</tr></thead>
+            <thead><tr><th></th><th>AFD</th><th>Estados del AFND</th>{% for s in a.tabla_sub_simbolos %}<th class="mono simbolos">{{ s }}</th>{% endfor %}</tr></thead>
             <tbody>{% for f in a.tabla_sub %}<tr><td>{{ f.marca }}</td><td class="mono">{{ f.estado }}</td><td class="mono">{{ f.conjunto }}</td>{% for c in f.celdas %}<td class="mono">{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody>
           </table></div>
           {% if a.minimizado %}
@@ -260,16 +261,18 @@ pre.codigo{background:#0f1b2a;color:#e6edf3;border-radius:8px;padding:14px;font-
           <p class="nota">Paso 2 &mdash; minimización: el AFD ya es mínimo ({{ a.afd.estados|length }} estados).</p>
           {% endif %}
           <div class="lienzo">{{ a.afd_svg|safe }}</div>
+          <div class="botones no-imprimir"><button type="button" class="btn btn-gris" data-jff="afd{{ a.id }}" data-nombre="AFD_{{ a.tipo }}_{{ a.id }}.jff">Descargar AFD para JFLAP (.jff)</button></div>
+          <textarea hidden id="afd{{ a.id }}">{{ a.afd_jff }}</textarea>
         </div>
 
         <div class="dos-col">
           <div class="paso">
             <h3><span class="paso-num">7</span>Tabla de transiciones del AFD</h3>
             <div class="tabla-scroll"><table>
-              <thead><tr><th></th><th>Estado</th>{% for s in a.afd.alfabeto %}<th class="mono">{{ s }}</th>{% endfor %}</tr></thead>
+              <thead><tr><th></th><th>Estado</th>{% for s in a.tabla_simbolos %}<th class="mono simbolos">{{ s }}</th>{% endfor %}</tr></thead>
               <tbody>{% for f in a.tabla %}<tr><td>{{ f.marca }}</td><td class="mono">{{ f.estado }}</td>{% for c in f.celdas %}<td class="mono">{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody>
             </table></div>
-            <p class="nota">→ estado inicial &middot; * estado de aceptación &middot; ∅ sin transición (rechazo)</p>
+            <p class="nota">→ estado inicial &middot; * estado de aceptación &middot; ∅ sin transición (rechazo). Los símbolos con las mismas transiciones comparten columna.</p>
           </div>
           <div class="paso">
             <h3><span class="paso-num">8</span>Transiciones δ</h3>
@@ -382,6 +385,14 @@ if (sel) sel.addEventListener('change', () => {
 document.querySelectorAll('[data-copiar]').forEach(b => b.addEventListener('click', () => {
   navigator.clipboard.writeText(document.getElementById(b.dataset.copiar).textContent)
     .then(() => { b.textContent = '¡Copiado!'; setTimeout(() => b.textContent = 'Copiar ' + b.dataset.copiar.toUpperCase(), 1500); });
+}));
+document.querySelectorAll('[data-jff]').forEach(b => b.addEventListener('click', () => {
+  const blob = new Blob([document.getElementById(b.dataset.jff).value], {type: 'application/xml'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = b.dataset.nombre;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }));
 document.querySelectorAll('[data-descargar]').forEach(b => b.addEventListener('click', () => {
   const tipo = b.dataset.descargar;

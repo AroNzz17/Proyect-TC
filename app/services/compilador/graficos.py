@@ -6,7 +6,6 @@ from collections import deque
 from html import escape
 
 R = 20  # radio de los estados
-DX, DY = 120, 80
 MARGEN = 60
 _ids = itertools.count(1)
 
@@ -28,6 +27,40 @@ def _capas(estados, inicial, aristas):
     return nivel
 
 
+def _por_linea(simbolos):
+    """Símbolos por renglón: 5 para rangos cortos (0-9), 13 para letras (a..m)."""
+    return 13 if len(simbolos) > 20 else 5
+
+
+def _renglones(simbolos):
+    n = _por_linea(simbolos)
+    return [", ".join(simbolos[i:i + n]) for i in range(0, len(simbolos), n)]
+
+
+def _medidas(simbolos):
+    r = _renglones(simbolos)
+    return 7.2 * max(len(x) for x in r) + 10, 15 * len(r) + 3
+
+
+def _etiqueta(lx, ly, simbolos, modo):
+    """Dibuja la etiqueta de una transición. Si tiene muchos símbolos
+    (p. ej. 0, 1, ..., 9) se reparte en varios renglones, como en JFLAP.
+    modo: 'arriba' (crece hacia arriba), 'abajo' o 'centro'."""
+    renglones = _renglones(simbolos)
+    ancho, alto = _medidas(simbolos)
+    if modo == "arriba":
+        top = ly + 7 - alto
+    elif modo == "abajo":
+        top = ly
+    else:
+        top = ly - alto / 2
+    partes = [f'<rect x="{lx - ancho / 2:.1f}" y="{top:.1f}" width="{ancho:.1f}" '
+              f'height="{alto:.1f}" rx="3" class="fondo-etq"/>']
+    for k, r in enumerate(renglones):
+        partes.append(f'<text x="{lx:.1f}" y="{top + 13 + 15 * k:.1f}" class="etq">{escape(r)}</text>')
+    return "".join(partes), top, top + alto
+
+
 def automata_svg(estados, inicial, finales, aristas, etiqueta=str):
     """estados: lista; aristas: (origen, simbolo, destino)."""
     fid = f"flecha{next(_ids)}"  # id único: varias SVG conviven en la página
@@ -36,29 +69,32 @@ def automata_svg(estados, inicial, finales, aristas, etiqueta=str):
     for e in estados:
         columnas.setdefault(nivel[e], []).append(e)
     max_filas = max(len(v) for v in columnas.values())
+    # Agrupa símbolos entre el mismo par de estados
+    agrupadas = {}
+    for o, s, d in aristas:
+        agrupadas.setdefault((o, d), []).append(s)
+    # La separación entre columnas se adapta al ancho de las etiquetas
+    medidas = [_medidas(v) for v in agrupadas.values()] or [(0, 0)]
+    DX = max(110, max(m[0] for m in medidas) + 40)
+    DY = max(80, max(m[1] for m in medidas) + 50)
     pos = {}
     for c, lista in columnas.items():
         desplaz = (max_filas - len(lista)) * DY / 2
         for f, e in enumerate(lista):
             pos[e] = (MARGEN + 30 + c * DX, MARGEN + 80 + desplaz + f * DY)
 
-    # Agrupa símbolos entre el mismo par de estados
-    agrupadas = {}
-    for o, s, d in aristas:
-        agrupadas.setdefault((o, d), []).append(s)
-
     ancho = MARGEN * 2 + 30 + (max(nivel.values()) + 1) * DX
-    partes = []
+    partes, etiquetas = [], []
     curva_n = 0
     ys = [y for _, y in pos.values()]
     for (o, d), simbolos in agrupadas.items():
-        texto = escape(", ".join(simbolos))
         x1, y1 = pos[o]
         x2, y2 = pos[d]
         if o == d:
             camino = (f"M {x1 - 8} {y1 - R + 2} C {x1 - 30} {y1 - 70}, "
                       f"{x1 + 30} {y1 - 70}, {x1 + 8} {y1 - R + 2}")
-            lx, ly = x1, y1 - 58
+            lx, ly = x1, y1 - 66
+            modo = "arriba"
             ys.append(y1 - 70)
         else:
             dx, dy = x2 - x1, y2 - y1
@@ -70,6 +106,9 @@ def automata_svg(estados, inicial, finales, aristas, etiqueta=str):
                 ex, ey = x2 - ux * R, y2 - uy * R
                 camino = f"M {sx:.1f} {sy:.1f} L {ex:.1f} {ey:.1f}"
                 lx, ly = (sx + ex) / 2, (sy + ey) / 2 - 7
+                modo = "arriba"
+                if len(_renglones(simbolos)) > 1:  # etiquetas largas: debajo de la flecha
+                    ly, modo = (sy + ey) / 2 + 6, "abajo"
             else:
                 curva_n += 1
                 hacia_atras = nivel[d] <= nivel[o]
@@ -87,13 +126,13 @@ def automata_svg(estados, inicial, finales, aristas, etiqueta=str):
                 ys.append((y1 + y2) / 4 + cy / 2)
                 lx = 0.25 * sx + 0.5 * cx + 0.25 * ex
                 ly = 0.25 * sy + 0.5 * cy + 0.25 * ey
+                modo = "centro" if hacia_atras else "arriba"
         partes.append(f'<path d="{camino}" class="arista" marker-end="url(#{fid})"/>')
-        ancho_t = 7.2 * len(", ".join(simbolos)) + 8
-        partes.append(
-            f'<rect x="{lx - ancho_t / 2:.1f}" y="{ly - 10:.1f}" width="{ancho_t:.1f}" '
-            f'height="16" rx="3" class="fondo-etq"/>'
-            f'<text x="{lx:.1f}" y="{ly + 2:.1f}" class="etq">{texto}</text>')
+        svg_etq, y_sup, y_inf = _etiqueta(lx, ly, simbolos, modo)
+        etiquetas.append(svg_etq)
+        ys += [y_sup + R, y_inf - R]
 
+    partes += etiquetas  # las etiquetas van encima de las flechas
     x0, y0 = pos[inicial]
     partes.append(f'<path d="M {x0 - R - 34} {y0} L {x0 - R - 2} {y0}" class="arista" '
                   f'marker-end="url(#{fid})"/>')
