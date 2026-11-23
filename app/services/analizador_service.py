@@ -7,21 +7,26 @@ from app.services.compilador import (lexico, automatas, graficos, jflap, sintact
 def compilar(codigo):
     tokens, errores_lexicos = lexico.analizar(codigo)
 
-    # Tabla de tokens y lexemas (sin repetir lexemas)
-    tabla_tokens, vistos = [], {}
+    # Tabla de tokens: una fila por token, con sus lexemas y una sola ER
+    filas = {}
     for t in tokens:
-        clave = (t.tipo, t.lexema)
-        if clave in vistos:
-            vistos[clave]["apariciones"].append(f"{t.linea}:{t.columna}")
-            continue
-        er = automatas.er_de_token(t.tipo, t.lexema)[1] if t.tipo != "TK_ERROR" else "—"
-        fila = {"token": t.tipo, "lexema": t.lexema, "er": er,
-                "apariciones": [f"{t.linea}:{t.columna}"],
-                "estado": "ERROR" if t.tipo == "TK_ERROR" else "OK", "detalle": t.detalle}
-        vistos[clave] = fila
-        tabla_tokens.append(fila)
+        if t.tipo not in filas:
+            er = automatas.er_de_token(t.tipo)[1] if t.tipo != "TK_ERROR" else "—"
+            filas[t.tipo] = {"token": t.tipo, "er": er, "lexemas": [], "lineas": [],
+                             "estado": "ERROR" if t.tipo == "TK_ERROR" else "OK",
+                             "detalles": []}
+        f = filas[t.tipo]
+        if t.lexema not in f["lexemas"] or t.tipo == "TK_ERROR":
+            f["lexemas"].append(t.lexema)
+        if t.linea not in f["lineas"]:
+            f["lineas"].append(t.linea)
+        if t.tipo == "TK_ERROR":
+            f["detalles"].append(f"{t.linea}:{t.columna} '{t.lexema}': {t.detalle}")
+    orden = automatas.ORDEN_TOKENS + ["TK_ERROR"]
+    tabla_tokens = sorted(filas.values(), key=lambda f: orden.index(f["token"]))
+    total_lexemas = len({(t.tipo, t.lexema) for t in tokens})
 
-    # ER, AFND y AFD de cada lexema (agrupados por expresión regular)
+    # ER, AFND y AFD de cada token
     lista_automatas = automatas.construir_automatas(tokens)
     for a in lista_automatas:
         a["afnd_svg"] = graficos.afnd_svg(a["afnd"])
@@ -61,6 +66,7 @@ def compilar(codigo):
         "codigo": codigo,
         "tabla_tokens": tabla_tokens,
         "total_tokens": len(tokens),
+        "total_lexemas": total_lexemas,
         "automatas": lista_automatas,
         "gramatica": sintactico.GRAMATICA,
         "terminales": sintactico.TERMINALES,

@@ -1,10 +1,12 @@
 """Análisis semántico: coherencia de tipos y valores sobre el árbol válido."""
 from datetime import date
 
+# Qué token de valor corresponde a cada variable
 DOMINIO = {
-    "TIPO_LINEA": {"PREPAGO", "POSTPAGO"},
-    "OPERADOR": {"MOV", "CLA", "ENT"},
+    "TIPO_LINEA": "VALOR_LINEA",     # PREPAGO | POSTPAGO
+    "OPERADOR": "VALOR_OPERADOR",    # MOV | CLA | ENT | BIT
 }
+EJEMPLOS = {"VALOR_LINEA": "PREPAGO, POSTPAGO", "VALOR_OPERADOR": "MOV, CLA, ENT, BIT"}
 OPERADORES_PERMITIDOS = {"==", "!="}  # las variables son categóricas
 METADATOS = {
     "FECHA_TRAMITE": "FECHA",
@@ -35,11 +37,13 @@ def extraer_regla(arbol):
     conector = None
     while cond is not None:
         h = cond["hijos"]
+        valor = h[2]["hijos"][0]  # <VALOR> → VALOR_LINEA | VALOR_OPERADOR
         regla["condiciones"].append({
             "conector": conector,
             "variable": h[0]["lexema"],
             "operador": h[1]["lexema"],
-            "valor": h[2]["lexema"],
+            "valor": valor["lexema"],
+            "tipo_valor": valor["etiqueta"],
         })
         if len(h) > 3:
             conector = h[3]["etiqueta"]
@@ -49,7 +53,7 @@ def extraer_regla(arbol):
     regla["accion"] = next(_buscar(arbol, "<ACCION_FINAL>"))["hijos"][0]["lexema"]
     palabras = []
     for linea in _buscar(arbol, "<LINEA_INFO>"):
-        if linea["regla"] in ("R9", "R10"):
+        if linea["regla"] in ("R12", "R13"):
             clave, valor = linea["hijos"]
             regla["metadatos"][clave["lexema"]] = {"tipo": valor["etiqueta"],
                                                    "valor": valor["lexema"]}
@@ -72,10 +76,10 @@ def analizar(regla, linea_regla):
     vistos = {}
     for c in regla["condiciones"]:
         var, op, val = c["variable"], c["operador"], c["valor"]
-        if val not in DOMINIO[var]:
-            permitidos = ", ".join(sorted(DOMINIO[var]))
-            error(f"Incompatibilidad de tipos: {var} no puede compararse con {val} "
-                  f"(valores permitidos: {permitidos})")
+        esperado = DOMINIO[var]
+        if c["tipo_valor"] != esperado:
+            error(f"Incompatibilidad de tipos: {var} solo se compara con un {esperado} "
+                  f"({EJEMPLOS[esperado]}), pero {val} es un {c['tipo_valor']}")
         if op not in OPERADORES_PERMITIDOS:
             error(f"El operador '{op}' no tiene sentido para {var}: es una variable "
                   "categórica, use == o !=")

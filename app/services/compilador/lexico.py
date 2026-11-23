@@ -7,16 +7,18 @@ import re
 
 RESERVADAS = ["SI", "ENTONCES", "Y", "O", "ACCION"]
 VARIABLES = ["TIPO_LINEA", "OPERADOR"]
-VALORES = ["PREPAGO", "POSTPAGO", "MOV", "CLA", "ENT"]
+VALORES_LINEA = ["PREPAGO", "POSTPAGO"]          # tipos de línea
+VALORES_OPERADOR = ["MOV", "CLA", "ENT", "BIT"]    # empresas operadoras
 COMANDOS = ["RENOVAR", "MIGRAR", "SUSPENDER"]
-OPERADORES_REL = ["==", "!=", ">=", "<=", ">", "<"]
+OPERADORES_REL = ["==", "!=", ">", "<", ">=", "<="]
 
 # Orden de prioridad cuando un identificador encaja en varias categorías:
-# RESERVADA > VARIABLE > VALOR > COMANDO > TEXTO
+# RESERVADA > VARIABLE > VALOR_LINEA > VALOR_OPERADOR > COMANDO > TEXTO
 CATEGORIAS = [
     ("RESERVADA", RESERVADAS),
     ("VARIABLE", VARIABLES),
-    ("VALOR", VALORES),
+    ("VALOR_LINEA", VALORES_LINEA),
+    ("VALOR_OPERADOR", VALORES_OPERADOR),
     ("COMANDO", COMANDOS),
 ]
 

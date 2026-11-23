@@ -4,20 +4,22 @@ Gramática (G = V, Σ, R, S) con S = <SCRIPT>:
   R1:  <SCRIPT>           → <REGLA> <BLOQUE_METADATOS>
   R2:  <SCRIPT>           → <REGLA>
   R3:  <REGLA>            → SI <CONDICION> ENTONCES ACCION <ACCION_FINAL>
-  R4:  <CONDICION>        → VARIABLE OPERADOR_REL VALOR
-  R5:  <CONDICION>        → VARIABLE OPERADOR_REL VALOR Y <CONDICION>
-  R5b: <CONDICION>        → VARIABLE OPERADOR_REL VALOR O <CONDICION>
-  R6:  <ACCION_FINAL>     → COMANDO
-  R7:  <BLOQUE_METADATOS> → <LINEA_INFO> <BLOQUE_METADATOS>
-  R8:  <BLOQUE_METADATOS> → <LINEA_INFO>
-  R9:  <LINEA_INFO>       → TEXTO FECHA
-  R10: <LINEA_INFO>       → TEXTO NUMERO
-  R11: <LINEA_INFO>       → <COMENTARIO>
-  R12: <COMENTARIO>       → TEXTO <COMENTARIO>
-  R13: <COMENTARIO>       → TEXTO
+  R4:  <CONDICION>        → VARIABLE OPERADOR_REL <VALOR>
+  R5:  <CONDICION>        → VARIABLE OPERADOR_REL <VALOR> Y <CONDICION>
+  R6:  <CONDICION>        → VARIABLE OPERADOR_REL <VALOR> O <CONDICION>
+  R7:  <VALOR>            → VALOR_LINEA
+  R8:  <VALOR>            → VALOR_OPERADOR
+  R9:  <ACCION_FINAL>     → COMANDO
+  R10: <BLOQUE_METADATOS> → <LINEA_INFO> <BLOQUE_METADATOS>
+  R11: <BLOQUE_METADATOS> → <LINEA_INFO>
+  R12: <LINEA_INFO>       → TEXTO FECHA
+  R13: <LINEA_INFO>       → TEXTO NUMERO
+  R14: <LINEA_INFO>       → <COMENTARIO>
+  R15: <COMENTARIO>       → TEXTO <COMENTARIO>
+  R16: <COMENTARIO>       → TEXTO
 
 Para que el análisis sea determinista (sin ambigüedad), se mira un token por
-delante: un TEXTO seguido de FECHA o NUMERO forma <LINEA_INFO> (R9/R10); en
+delante: un TEXTO seguido de FECHA o NUMERO forma <LINEA_INFO> (R12/R13); en
 cualquier otro caso el TEXTO inicia un <COMENTARIO>, que consume las palabras
 siguientes hasta el final o hasta otro par TEXTO FECHA / TEXTO NUMERO.
 """
@@ -26,21 +28,23 @@ GRAMATICA = [
     ("R1", "<SCRIPT>", "<REGLA> <BLOQUE_METADATOS>"),
     ("R2", "<SCRIPT>", "<REGLA>"),
     ("R3", "<REGLA>", "SI <CONDICION> ENTONCES ACCION <ACCION_FINAL>"),
-    ("R4", "<CONDICION>", "VARIABLE OPERADOR_REL VALOR"),
-    ("R5", "<CONDICION>", "VARIABLE OPERADOR_REL VALOR Y <CONDICION>"),
-    ("R5b", "<CONDICION>", "VARIABLE OPERADOR_REL VALOR O <CONDICION>"),
-    ("R6", "<ACCION_FINAL>", "COMANDO"),
-    ("R7", "<BLOQUE_METADATOS>", "<LINEA_INFO> <BLOQUE_METADATOS>"),
-    ("R8", "<BLOQUE_METADATOS>", "<LINEA_INFO>"),
-    ("R9", "<LINEA_INFO>", "TEXTO FECHA"),
-    ("R10", "<LINEA_INFO>", "TEXTO NUMERO"),
-    ("R11", "<LINEA_INFO>", "<COMENTARIO>"),
-    ("R12", "<COMENTARIO>", "TEXTO <COMENTARIO>"),
-    ("R13", "<COMENTARIO>", "TEXTO"),
+    ("R4", "<CONDICION>", "VARIABLE OPERADOR_REL <VALOR>"),
+    ("R5", "<CONDICION>", "VARIABLE OPERADOR_REL <VALOR> Y <CONDICION>"),
+    ("R6", "<CONDICION>", "VARIABLE OPERADOR_REL <VALOR> O <CONDICION>"),
+    ("R7", "<VALOR>", "VALOR_LINEA"),
+    ("R8", "<VALOR>", "VALOR_OPERADOR"),
+    ("R9", "<ACCION_FINAL>", "COMANDO"),
+    ("R10", "<BLOQUE_METADATOS>", "<LINEA_INFO> <BLOQUE_METADATOS>"),
+    ("R11", "<BLOQUE_METADATOS>", "<LINEA_INFO>"),
+    ("R12", "<LINEA_INFO>", "TEXTO FECHA"),
+    ("R13", "<LINEA_INFO>", "TEXTO NUMERO"),
+    ("R14", "<LINEA_INFO>", "<COMENTARIO>"),
+    ("R15", "<COMENTARIO>", "TEXTO <COMENTARIO>"),
+    ("R16", "<COMENTARIO>", "TEXTO"),
 ]
-TERMINALES = ["SI", "ENTONCES", "Y", "O", "ACCION", "VARIABLE", "VALOR", "COMANDO",
-              "OPERADOR_REL", "TEXTO", "NUMERO", "FECHA"]
-NO_TERMINALES = ["<SCRIPT>", "<REGLA>", "<CONDICION>", "<ACCION_FINAL>",
+TERMINALES = ["SI", "ENTONCES", "Y", "O", "ACCION", "VARIABLE", "OPERADOR_REL",
+              "VALOR_LINEA", "VALOR_OPERADOR", "COMANDO", "TEXTO", "NUMERO", "FECHA"]
+NO_TERMINALES = ["<SCRIPT>", "<REGLA>", "<CONDICION>", "<VALOR>", "<ACCION_FINAL>",
                  "<BLOQUE_METADATOS>", "<LINEA_INFO>", "<COMENTARIO>"]
 
 
@@ -101,29 +105,39 @@ class Parser:
         hijos = [
             self.esperar("VARIABLE", "una VARIABLE (TIPO_LINEA u OPERADOR)"),
             self.esperar("OPERADOR_REL", "un OPERADOR_REL (==, !=, >, <, >=, <=)"),
-            self.esperar("VALOR", "un VALOR (PREPAGO, POSTPAGO, MOV, CLA, ENT)"),
+            self.valor(),
         ]
         tok = self.actual()
         if tok is not None and _nombre(tok) in ("Y", "O"):
             conector = _nombre(tok)
             hijos.append(self.esperar(conector))
             hijos.append(self.condicion())
-            return {"etiqueta": "<CONDICION>", "regla": "R5" if conector == "Y" else "R5b",
+            return {"etiqueta": "<CONDICION>", "regla": "R5" if conector == "Y" else "R6",
                     "hijos": hijos}
         return {"etiqueta": "<CONDICION>", "regla": "R4", "hijos": hijos}
 
+    # <VALOR>
+    def valor(self):
+        tok = self.actual()
+        if tok is not None and _nombre(tok) == "VALOR_LINEA":
+            return {"etiqueta": "<VALOR>", "regla": "R7", "hijos": [self.esperar("VALOR_LINEA")]}
+        if tok is not None and _nombre(tok) == "VALOR_OPERADOR":
+            return {"etiqueta": "<VALOR>", "regla": "R8", "hijos": [self.esperar("VALOR_OPERADOR")]}
+        self.esperar("VALOR_LINEA", "un VALOR_LINEA (PREPAGO, POSTPAGO) o un "
+                     "VALOR_OPERADOR (MOV, CLA, ENT, BIT)")
+
     # <ACCION_FINAL>
     def accion_final(self):
-        return {"etiqueta": "<ACCION_FINAL>", "regla": "R6",
+        return {"etiqueta": "<ACCION_FINAL>", "regla": "R9",
                 "hijos": [self.esperar("COMANDO", "un COMANDO (RENOVAR, MIGRAR, SUSPENDER)")]}
 
     # <BLOQUE_METADATOS>
     def bloque_metadatos(self):
         linea = self.linea_info()
         if self.actual() is None:
-            return {"etiqueta": "<BLOQUE_METADATOS>", "regla": "R8", "hijos": [linea]}
+            return {"etiqueta": "<BLOQUE_METADATOS>", "regla": "R11", "hijos": [linea]}
         resto = self.bloque_metadatos()
-        return {"etiqueta": "<BLOQUE_METADATOS>", "regla": "R7", "hijos": [linea, resto]}
+        return {"etiqueta": "<BLOQUE_METADATOS>", "regla": "R10", "hijos": [linea, resto]}
 
     def _es_par_dato(self):
         a, b = self.actual(), self.siguiente()
@@ -136,18 +150,18 @@ class Parser:
             clave = self.esperar("TEXTO")
             tipo = _nombre(self.actual())
             valor = self.esperar(tipo)
-            return {"etiqueta": "<LINEA_INFO>", "regla": "R9" if tipo == "FECHA" else "R10",
+            return {"etiqueta": "<LINEA_INFO>", "regla": "R12" if tipo == "FECHA" else "R13",
                     "hijos": [clave, valor]}
-        return {"etiqueta": "<LINEA_INFO>", "regla": "R11", "hijos": [self.comentario()]}
+        return {"etiqueta": "<LINEA_INFO>", "regla": "R14", "hijos": [self.comentario()]}
 
     # <COMENTARIO>
     def comentario(self):
         palabra = self.esperar("TEXTO", "un TEXTO (metadato o comentario)")
         tok = self.actual()
         if tok is not None and _nombre(tok) == "TEXTO" and not self._es_par_dato():
-            return {"etiqueta": "<COMENTARIO>", "regla": "R12",
+            return {"etiqueta": "<COMENTARIO>", "regla": "R15",
                     "hijos": [palabra, self.comentario()]}
-        return {"etiqueta": "<COMENTARIO>", "regla": "R13", "hijos": [palabra]}
+        return {"etiqueta": "<COMENTARIO>", "regla": "R16", "hijos": [palabra]}
 
 
 def dividir_scripts(tokens):

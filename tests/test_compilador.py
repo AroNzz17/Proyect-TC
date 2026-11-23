@@ -14,13 +14,31 @@ class TestLexico(unittest.TestCase):
     def test_clasifica_tokens(self):
         tokens, errores = lexico.analizar("SI TIPO_LINEA == PREPAGO 989654321 03/11/2026 hola")
         self.assertEqual([t.tipo for t in tokens],
-                         ["RESERVADA", "VARIABLE", "OPERADOR_REL", "VALOR", "NUMERO", "FECHA", "TEXTO"])
+                         ["RESERVADA", "VARIABLE", "OPERADOR_REL", "VALOR_LINEA", "NUMERO", "FECHA", "TEXTO"])
         self.assertEqual(errores, [])
 
     def test_errores_lexicos_con_linea_y_columna(self):
         _, errores = lexico.analizar("SI X = Y\nCELULAR 12345 @")
         posiciones = [(e["linea"], e["columna"]) for e in errores]
         self.assertEqual(posiciones, [(1, 6), (2, 9), (2, 15)])
+
+
+class TestTokensSeparados(unittest.TestCase):
+    def test_valor_linea_y_valor_operador(self):
+        tokens, _ = lexico.analizar("PREPAGO POSTPAGO MOV CLA ENT BIT")
+        self.assertEqual([t.tipo for t in tokens],
+                         ["VALOR_LINEA"] * 2 + ["VALOR_OPERADOR"] * 4)
+
+    def test_una_er_por_token(self):
+        r = compilar("SI OPERADOR == CLA ENTONCES ACCION MIGRAR")
+        fila = next(f for f in r["tabla_tokens"] if f["token"] == "VALOR_OPERADOR")
+        self.assertEqual(fila["er"], "MOV | CLA | ENT | BIT")
+        self.assertEqual(fila["lexemas"], ["CLA"])
+
+    def test_variable_con_valor_de_otro_tipo(self):
+        r = compilar("SI TIPO_LINEA == BIT ENTONCES ACCION MIGRAR")
+        self.assertIn("VALOR_LINEA", r["errores"][0]["mensaje"])
+        self.assertTrue(compilar("SI OPERADOR == BIT ENTONCES ACCION MIGRAR")["aprobado"])
 
 
 class TestAutomatas(unittest.TestCase):

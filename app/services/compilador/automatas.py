@@ -7,6 +7,8 @@ Los estados se nombran q0, q1, q2, ...
 """
 from collections import deque
 
+from . import lexico
+
 EPS = "ε"
 CLASES = {"a-z": ("a", "z"), "A-Z": ("A", "Z"), "0-9": ("0", "9")}
 
@@ -48,11 +50,27 @@ def _rep(nodo_factory, veces):
     return [nodo_factory() for _ in range(veces)]
 
 
-def er_de_token(tipo, lexema):
-    """Devuelve (ast, notación formal, regex de Python) para un lexema."""
-    if tipo in ("RESERVADA", "VARIABLE", "VALOR", "COMANDO", "OPERADOR_REL"):
-        formal = lexema if len(lexema) == 1 else "·".join(lexema)
-        return literal(lexema), formal, _escapar_py(lexema)
+# Palabras de cada token cuya ER es una unión de palabras fijas
+PALABRAS_TOKEN = {
+    "RESERVADA": lexico.RESERVADAS,
+    "VARIABLE": lexico.VARIABLES,
+    "VALOR_LINEA": lexico.VALORES_LINEA,
+    "VALOR_OPERADOR": lexico.VALORES_OPERADOR,
+    "COMANDO": lexico.COMANDOS,
+    "OPERADOR_REL": lexico.OPERADORES_REL,
+}
+ORDEN_TOKENS = ["RESERVADA", "VARIABLE", "VALOR_LINEA", "VALOR_OPERADOR", "COMANDO",
+                "OPERADOR_REL", "NUMERO", "FECHA", "TEXTO"]
+
+
+def er_de_token(tipo, lexema=None):
+    """Devuelve (ast, notación formal, regex de Python) de la ER del TOKEN.
+    La ER es la misma para todos los lexemas del token (p. ej. VALOR_OPERADOR
+    = MOV | CLA | ENT | BIT aunque en el script solo aparezca CLA)."""
+    if tipo in PALABRAS_TOKEN:
+        palabras = PALABRAS_TOKEN[tipo]
+        ast = Alt(*[literal(p) for p in palabras])
+        return ast, " | ".join(palabras), "|".join(_escapar_py(p) for p in palabras)
     if tipo == "NUMERO":
         ast = Cat(Sim("9"), *_rep(lambda: Sim("0-9"), 8))
         return ast, "9 · (0-9)^8", "9[0-9]{8}"
@@ -369,7 +387,8 @@ def tabla_afnd(afnd):
 
 # ---------------------------------------------------------------- Agrupación
 def construir_automatas(tokens):
-    """Agrupa los lexemas por su ER y construye AFND y AFD de cada una."""
+    """Construye la ER, el AFND y el AFD de cada TOKEN que aparece en el
+    script, y verifica en el AFD cada lexema encontrado de ese token."""
     grupos, orden = {}, []
     for t in tokens:
         if t.tipo == "TK_ERROR":
@@ -383,6 +402,7 @@ def construir_automatas(tokens):
         if t.lexema not in grupos[clave]["lexemas"]:
             grupos[clave]["lexemas"].append(t.lexema)
 
+    orden.sort(key=lambda c: ORDEN_TOKENS.index(c[0]))
     resultado = []
     for i, clave in enumerate(orden, 1):
         g = grupos[clave]
