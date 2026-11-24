@@ -14,14 +14,14 @@ Gramática (G = V, Σ, R, S) con S = <SCRIPT>:
   R11: <BLOQUE_METADATOS> → <LINEA_INFO>
   R12: <LINEA_INFO>       → TEXTO FECHA
   R13: <LINEA_INFO>       → TEXTO NUMERO
-  R14: <LINEA_INFO>       → <COMENTARIO>
+  R14: <LINEA_INFO>       → OBSERVACION <COMENTARIO>
   R15: <COMENTARIO>       → TEXTO <COMENTARIO>
   R16: <COMENTARIO>       → TEXTO
 
-Para que el análisis sea determinista (sin ambigüedad), se mira un token por
-delante: un TEXTO seguido de FECHA o NUMERO forma <LINEA_INFO> (R12/R13); en
-cualquier otro caso el TEXTO inicia un <COMENTARIO>, que consume las palabras
-siguientes hasta el final o hasta otro par TEXTO FECHA / TEXTO NUMERO.
+La gramática no es ambigua: un comentario solo puede empezar con la palabra
+reservada OBSERVACION (R14). El analizador mira un token por delante: un TEXTO
+seguido de FECHA o NUMERO forma <LINEA_INFO> (R12/R13), y un comentario
+agrupa las palabras siguientes hasta el final o hasta el siguiente metadato.
 """
 
 GRAMATICA = [
@@ -38,11 +38,11 @@ GRAMATICA = [
     ("R11", "<BLOQUE_METADATOS>", "<LINEA_INFO>"),
     ("R12", "<LINEA_INFO>", "TEXTO FECHA"),
     ("R13", "<LINEA_INFO>", "TEXTO NUMERO"),
-    ("R14", "<LINEA_INFO>", "<COMENTARIO>"),
+    ("R14", "<LINEA_INFO>", "OBSERVACION <COMENTARIO>"),
     ("R15", "<COMENTARIO>", "TEXTO <COMENTARIO>"),
     ("R16", "<COMENTARIO>", "TEXTO"),
 ]
-TERMINALES = ["SI", "ENTONCES", "Y", "O", "ACCION", "VARIABLE", "OPERADOR_REL",
+TERMINALES = ["SI", "ENTONCES", "Y", "O", "ACCION", "OBSERVACION", "VARIABLE", "OPERADOR_REL",
               "VALOR_LINEA", "VALOR_OPERADOR", "COMANDO", "TEXTO", "NUMERO", "FECHA"]
 NO_TERMINALES = ["<SCRIPT>", "<REGLA>", "<CONDICION>", "<VALOR>", "<ACCION_FINAL>",
                  "<BLOQUE_METADATOS>", "<LINEA_INFO>", "<COMENTARIO>"]
@@ -152,11 +152,17 @@ class Parser:
             valor = self.esperar(tipo)
             return {"etiqueta": "<LINEA_INFO>", "regla": "R12" if tipo == "FECHA" else "R13",
                     "hijos": [clave, valor]}
-        return {"etiqueta": "<LINEA_INFO>", "regla": "R14", "hijos": [self.comentario()]}
+        tok = self.actual()
+        if tok is not None and _nombre(tok) == "OBSERVACION":
+            return {"etiqueta": "<LINEA_INFO>", "regla": "R14",
+                    "hijos": [self.esperar("OBSERVACION"), self.comentario()]}
+        encontrado = "el fin de la regla" if tok is None else f"'{tok.lexema}' ({_nombre(tok)})"
+        raise ErrorSintactico("Se esperaba un metadato (FECHA_TRAMITE o CELULAR seguido de su valor) "
+                              f"u OBSERVACION seguida de un comentario, pero se encontró {encontrado}", tok)
 
     # <COMENTARIO>
     def comentario(self):
-        palabra = self.esperar("TEXTO", "un TEXTO (metadato o comentario)")
+        palabra = self.esperar("TEXTO", "un TEXTO (palabra del comentario)")
         tok = self.actual()
         if tok is not None and _nombre(tok) == "TEXTO" and not self._es_par_dato():
             return {"etiqueta": "<COMENTARIO>", "regla": "R15",

@@ -1,7 +1,7 @@
 """Orquesta las fases del compilador: léxico → ER/AFND/AFD → sintáctico
 (árbol) → semántico → traducción a SQL y JSON."""
-from app.services.compilador import (lexico, automatas, graficos, jflap, sintactico,
-                                      semantico, transpilador)
+from app.services.compilador import (lexico, automatas, graficos, sintactico, semantico,
+                                      transpilador)
 
 
 def compilar(codigo):
@@ -31,8 +31,6 @@ def compilar(codigo):
     for a in lista_automatas:
         a["afnd_svg"] = graficos.afnd_svg(a["afnd"])
         a["afd_svg"] = graficos.afd_svg(a["afd"])
-        a["afnd_jff"] = jflap.afnd_jff(a["afnd"])
-        a["afd_jff"] = jflap.afd_jff(a["afd"])
 
     # Análisis sintáctico y semántico regla por regla
     validos = [t for t in tokens if t.tipo != "TK_ERROR"]

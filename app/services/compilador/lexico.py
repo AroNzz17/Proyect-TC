@@ -5,7 +5,7 @@ larga) y produce la lista de tokens con su lexema, línea y columna.
 """
 import re
 
-RESERVADAS = ["SI", "ENTONCES", "Y", "O", "ACCION"]
+RESERVADAS = ["SI", "ENTONCES", "Y", "O", "ACCION", "OBSERVACION"]
 VARIABLES = ["TIPO_LINEA", "OPERADOR"]
 VALORES_LINEA = ["PREPAGO", "POSTPAGO"]          # tipos de línea
 VALORES_OPERADOR = ["MOV", "CLA", "ENT", "BIT"]    # empresas operadoras

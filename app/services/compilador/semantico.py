@@ -58,9 +58,7 @@ def extraer_regla(arbol):
             regla["metadatos"][clave["lexema"]] = {"tipo": valor["etiqueta"],
                                                    "valor": valor["lexema"]}
         else:
-            palabras += [h["lexema"] for h in _hojas(linea)]
-    if palabras and palabras[0] == "OBSERVACION":
-        palabras = palabras[1:]
+            palabras += [h["lexema"] for h in _hojas(linea) if h["etiqueta"] == "TEXTO"]
     regla["comentario"] = " ".join(palabras)
     return regla
 

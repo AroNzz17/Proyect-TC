@@ -239,8 +239,6 @@ pre.codigo{background:#0f1b2a;color:#e6edf3;border-radius:8px;padding:14px;font-
           <p class="nota">Gráfico generado por el código fuente a partir de la ER (no es una imagen).</p>
           <p class="nota">Compatible con JFLAP: cada transición lee un solo símbolo (los rangos de la ER se escriben con sus caracteres: 0, 1, ..., 9) y ε es la transición vacía (λ en JFLAP).</p>
           <div class="lienzo">{{ a.afnd_svg|safe }}</div>
-          <div class="botones no-imprimir"><button type="button" class="btn btn-gris" data-jff="afnd{{ a.id }}" data-nombre="AFND_{{ a.tipo }}_{{ a.id }}.jff">Descargar AFND para JFLAP (.jff)</button></div>
-          <textarea hidden id="afnd{{ a.id }}">{{ a.afnd_jff }}</textarea>
           <details class="no-imprimir" style="margin-top:10px"><summary class="nota" style="cursor:pointer">Ver tabla de transiciones del AFND</summary>
             <div class="tabla-scroll"><table>
               <thead><tr><th></th><th>Estado</th>{% for s in a.afnd_simbolos %}<th class="mono simbolos">{{ s }}</th>{% endfor %}</tr></thead>
@@ -262,8 +260,6 @@ pre.codigo{background:#0f1b2a;color:#e6edf3;border-radius:8px;padding:14px;font-
           <p class="nota">Paso 2 &mdash; minimización: el AFD ya es mínimo ({{ a.afd.estados|length }} estados).</p>
           {% endif %}
           <div class="lienzo">{{ a.afd_svg|safe }}</div>
-          <div class="botones no-imprimir"><button type="button" class="btn btn-gris" data-jff="afd{{ a.id }}" data-nombre="AFD_{{ a.tipo }}_{{ a.id }}.jff">Descargar AFD para JFLAP (.jff)</button></div>
-          <textarea hidden id="afd{{ a.id }}">{{ a.afd_jff }}</textarea>
         </div>
 
         <div class="dos-col">
@@ -386,14 +382,6 @@ if (sel) sel.addEventListener('change', () => {
 document.querySelectorAll('[data-copiar]').forEach(b => b.addEventListener('click', () => {
   navigator.clipboard.writeText(document.getElementById(b.dataset.copiar).textContent)
     .then(() => { b.textContent = '¡Copiado!'; setTimeout(() => b.textContent = 'Copiar ' + b.dataset.copiar.toUpperCase(), 1500); });
-}));
-document.querySelectorAll('[data-jff]').forEach(b => b.addEventListener('click', () => {
-  const blob = new Blob([document.getElementById(b.dataset.jff).value], {type: 'application/xml'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = b.dataset.nombre;
-  a.click();
-  URL.revokeObjectURL(a.href);
 }));
 document.querySelectorAll('[data-descargar]').forEach(b => b.addEventListener('click', () => {
   const tipo = b.dataset.descargar;
